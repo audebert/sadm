@@ -198,6 +198,9 @@ function stage_presencesync_sso {
   echo '[-] Enable and start the presencesync SSO service'
   container_run /usr/bin/systemctl enable --now presencesync_sso
 
+  echo '[-] Enable sso backend in nginx'
+  sed -i 's@# include sso/backend.nginx;@include sso/backend.nginx;@' $CONTAINER_ROOT/etc/nginx.conf
+
   echo '[-] Reload nginx'
   container_run /usr/bin/systemctl reload nginx
 
