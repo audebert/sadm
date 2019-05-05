@@ -11,6 +11,17 @@ function stage_setup_container {
   else
     rsync -Pha $ARCH_LINUX_BASE_ROOT $CONTAINER_ROOT
   fi
+
+  echo "[-] Create $CONTAINER_HOSTNAME.nspawn configuration file"
+  mkdir -p /etc/systemd/nspawn
+  cat >/etc/systemd/nspawn/$CONTAINER_HOSTNAME.nspawn <<EOF
+[Network]
+Zone=$NETWORK_ZONE
+
+[Files]
+# Allows cp-ing from container to container
+PrivateUsersChown=false
+EOF
 }
 
 function stage_bootstrap_arch_linux {
