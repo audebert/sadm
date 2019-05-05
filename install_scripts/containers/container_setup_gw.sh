@@ -158,7 +158,7 @@ function stage_setup_mdbdns {
   container_run /var/prologin/venv/bin/python /var/prologin/mdb/manage.py \
     addmachine --hostname gw --mac 11:22:33:44:55:66 \
       --ip 192.168.1.254 --rfs 0 --hfs 0 --mtype service --room pasteur \
-      --aliases mdb,mdbsync,ns,netboot,udb,udbsync,presencesync,ntp,sso
+      --aliases mdb,mdbsync,ns,netboot,udb,udbsync,presencesync,ntp
 
   # Delay for the generated files to be written
   sleep .5
@@ -582,7 +582,7 @@ function test_hfsdb {
 }
 
 
-# container script
+# "container" script
 run container_stop
 run stage_setup_container
 run stage_bootstrap_arch_linux
