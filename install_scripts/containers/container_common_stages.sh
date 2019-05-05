@@ -12,9 +12,9 @@ function stage_setup_container {
     rsync -Pha $ARCH_LINUX_BASE_ROOT $CONTAINER_ROOT
   fi
 
-  echo "[-] Create $CONTAINER_HOSTNAME.nspawn configuration file"
+  echo "[-] Create $CONTAINER_NAME.nspawn configuration file"
   mkdir -p /etc/systemd/nspawn
-  cat >/etc/systemd/nspawn/$CONTAINER_HOSTNAME.nspawn <<EOF
+  cat >/etc/systemd/nspawn/$CONTAINER_NAME.nspawn <<EOF
 [Network]
 Zone=$NETWORK_ZONE
 
