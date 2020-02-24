@@ -20,11 +20,11 @@
 db:
     default:
         ENGINE: django.db.backends.postgresql
-        HOST: web
+        HOST: localhost
         PORT: 5432
         USER: concours
         NAME: concours
-        PASSWORD: "%%SECRET:concoursdb%%"
+        PASSWORD: 101010
 
 # Informations on where the master node is located.
 master:
@@ -33,14 +33,14 @@ master:
 
 # What game is currently being played.
 contest:
-  game: CHANGEME        # Most likely "prologin<YEAR>"
+  game: prologin2019        # Most likely "prologin<YEAR>"
   nb_players: 2         # Number of players for this game.
 
   # Root directory where the website uploads champions, finds logs, etc.
   # Should be shared with the master node.
   directory: /var/prologin/concours_shared
 
-  use_maps: false       # Do the game use maps?
+  use_maps: true       # Do the game use maps?
   map_validator_script: null  # Path of a script that validates maps
   fight_only_own_champions: false  # Can users only fight their own champions?
 
@@ -52,9 +52,7 @@ debug: true
 
 # Website related informations.
 website:
-  static_path: CHANGEME     # Directory containing static files for the custom
-                            # web design
-  replay: true              # Activate in-browser replay
+  replay: false              # Activate in-browser replay
 
 # Redmine URLs
 redmine_urls:

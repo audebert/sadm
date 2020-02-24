@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workernode
+  labels:
+    app: workernode
+spec:
+  selector:
+    matchLabels:
+      app: workernode
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: workernode
+    spec:
+      containers:
+      - name: workernode
+        image: gcr.io/halfr-cloud-stechec/sadm
+        imagePullPolicy: Always
+        command: ["python", "-m", "prologin.workernode"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: workernode
+  labels:
+    app: workernode
+spec:
+  ports:
+  - port: 8068
+    targetPort: 8068
+    name: app
+  - port: 9020
+    targetPort: 9020
+    name: monitoring
+  selector:
+    app: workernode

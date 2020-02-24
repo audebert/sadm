@@ -17,8 +17,8 @@ worker:
 path:
     stechec_server: /usr/bin/stechec2-server
     stechec_client: /usr/bin/stechec2-client
-    rules: /usr/lib/libCHANGEME.so                    # Stechec's rules library
-    makefiles: /usr/share/stechec2/CHANGEME/makefiles # Directory containing the makefiles
+    rules: /usr/lib/libprologin2019.so                    # Stechec's rules library
+    makefiles: /usr/share/stechec2/prologin2019/makefiles # Directory containing the makefiles
 
 timeout: # timeouts in seconds (double)
     server: 400

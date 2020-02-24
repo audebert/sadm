@@ -147,4 +147,4 @@ class AiohttpApp:
         self.app.router.add_route("*", "/{path_info:.*}", wsgi_handler)
 
     def run(self, **kwargs):
-        aiohttp.web.run_app(self.app, print=lambda *_: None, **kwargs)
+        aiohttp.web.run_app(self.app, **kwargs)

@@ -22,7 +22,7 @@ import logging.handlers
 
 
 # Do not log to stderr if started by systemd
-LOG_STDERR = os.getppid() != 1
+LOG_STDERR = True
 
 
 def setup_logging(program, verbose=True, local=LOG_STDERR):
@@ -35,7 +35,7 @@ def setup_logging(program, verbose=True, local=LOG_STDERR):
       verbose: If true, log more messages (DEBUG instead of INFO).
       local: If true, log to stderr as well as syslog.
     """
-    loggers = [logging.handlers.SysLogHandler("/dev/log")]
+    loggers = []
     if local:
         loggers.append(logging.StreamHandler())
     for logger in loggers:

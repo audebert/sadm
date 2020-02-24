@@ -19,14 +19,14 @@ worker:
 # SQL connection informations and queries. If you are using the standard
 # stechec website, do not change the queries!
 sql:
-  host: web
+  host: localhost
   port: 5432
   user: concours
-  password: "%%SECRET:concoursdb%%"
+  password: "101010"
   database: concours
 
 contest:
-  game: CHANGEME # most likely prologin<YEAR>
+  game: prologin2019 # most likely prologin<YEAR>
 
   # Root directory where the website uploads champions, finds logs, etc.
   # Should be shared with the master node.

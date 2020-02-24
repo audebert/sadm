@@ -29,6 +29,20 @@ class ConfigReadError(Exception):
     pass
 
 
+def load_env_values(cfg):
+    """Load values from environnement.
+
+    If a value has the format FROMENV:ENV_VAR_NAME, replace it with the
+    environment variable ENV_VAR_NAME.
+    """
+    for key, value in cfg.items():
+        if isinstance(value, str):
+            if value.startswith('FROMENV:'):
+                cfg[key] = os.environ[value[len('FROMENV:'):]]
+        elif isinstance(value, dict):
+            load_env_values(value)
+
+
 def load(profile):
     """Load (if needed) and return the configuration file for `profile`.
 
@@ -51,6 +65,8 @@ def load(profile):
             cfg = yaml.safe_load(cfg_fp)
     except IOError:
         raise ConfigReadError("%s does not exist (specify CFG_DIR?)" % cfg_path)
+
+    load_env_values(cfg)
 
     LOADED_CONFIGS[profile] = cfg
 
