@@ -8,62 +8,27 @@ spec:
   selector:
     matchLabels:
       app: concours
-  replicas: 1
   template:
     metadata:
       labels:
         app: concours
     spec:
+      hostAliases:
+      - ip: "10.53.128.3"
+        hostnames: ["postgres"]
       containers:
       - name: concours
-        # Replace  with your project ID or use `make template`
         image: gcr.io/halfr-cloud-stechec/sadm
-        # This setting makes nodes pull the docker image every time before
-        # starting the pod. This is useful when debugging, but should be turned
-        # off in production.
         imagePullPolicy: Always
-        command: ["gunicorn", "-b", ":8080", "prologin.concours.wsgi"]
-        ports:
-        - containerPort: 8080
-
-      # [START proxy_container]
-      - image: gcr.io/cloudsql-docker/gce-proxy:1.16
-        name: cloudsql-proxy
-        command: ["/cloud_sql_proxy", "--dir=/cloudsql",
-                  "-instances=halfr-cloud-stechec:europe-west1:concours=tcp:5432",
-                  "-credential_file=/secrets/cloudsql/credentials.json"]
+        command: ["gunicorn", "-b", ":80", "prologin.concours.wsgi"]
         volumeMounts:
-          - name: cloudsql-oauth-credentials
-            mountPath: /secrets/cloudsql
-            readOnly: true
-          - name: ssl-certs
-            mountPath: /etc/ssl/certs
-          - name: cloudsql
-            mountPath: /cloudsql
-      # [END proxy_container] 
-      # [START volumes]
+          - name: nfs
+            mountPath: "/var/prologin/concours_shared"
       volumes:
-        - name: cloudsql-oauth-credentials
-          secret:
-            secretName: cloudsql-oauth-credentials
-        - name: ssl-certs
-          hostPath:
-            path: /etc/ssl/certs
-        - name: cloudsql
-          emptyDir:
-      # [END volumes]        
-# [END kubernetes_deployment]
-
+      - name: nfs
+        persistentVolumeClaim:
+          claimName: nfs
 ---
-
-# [START service]
-# The polls service provides a load-balancing proxy over the polls app
-# pods. By specifying the type as a 'LoadBalancer', Container Engine will
-# create an external HTTP load balancer.
-# For more information about Services see:
-#   https://cloud.google.com/container-engine/docs/services/
-# For more information about external HTTP load balancing see:
-#   https://cloud.google.com/container-engine/docs/load-balancer
 apiVersion: v1
 kind: Service
 metadata:
@@ -74,7 +39,6 @@ spec:
   type: LoadBalancer
   ports:
   - port: 80
-    targetPort: 8080
+    targetPort: 80
   selector:
     app: concours
-# [END service]

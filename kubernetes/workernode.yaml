@@ -8,7 +8,6 @@ spec:
   selector:
     matchLabels:
       app: workernode
-  replicas: 1
   template:
     metadata:
       labels:
@@ -19,6 +18,12 @@ spec:
         image: gcr.io/halfr-cloud-stechec/sadm
         imagePullPolicy: Always
         command: ["python", "-m", "prologin.workernode"]
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+
 ---
 apiVersion: v1
 kind: Service

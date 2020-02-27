@@ -1,20 +1,25 @@
 FROM archlinux
 
+# Setup prologin.org repository
+ADD https://repo.prologin.org/prologin.pub prologin.pub
+# TODO(halfr): add prologin.conf to repo.prologin.org
+COPY arch/prologin.conf /
+RUN cat /prologin.conf >> /etc/pacman.conf && pacman-key --init && pacman-key --add prologin.pub && pacman-key --lsign-key prologin
+
 # Arch Linux setup
-RUN pacman -Syu --noconfirm --needed base-devel python-virtualenv postgresql-libs git && pacman -Scc --noconfirm
+RUN pacman -Syu --noconfirm --needed base-devel python-virtualenv postgresql-libs git isolate-git stechec2 prologin2019 && pacman -Scc --noconfirm
 
 # Setup venv
-RUN /usr/bin/virtualenv -p python3 /env
+RUN virtualenv -p python3 /env
 ENV PATH /env/bin:$PATH
 
-# Setup requirements
-ADD requirements.txt /app/requirements.txt
-RUN /env/bin/pip install --upgrade pip && /env/bin/pip install -r /app/requirements.txt
+# Copy sadm
+COPY . /sadm
+WORKDIR /sadm
 
-# Add app config
-ADD etc/prologin /etc/prologin
+# Setup Python package
+RUN /env/bin/pip install --upgrade pip && /env/bin/pip install -r /sadm/requirements.txt
+RUN cd /sadm/python-lib && /env/bin/python setup.py install
 
-# Install app
-ADD python-lib /app
-WORKDIR /app
-RUN /env/bin/python setup.py install
+# Add prologin config
+COPY etc/prologin /etc/prologin

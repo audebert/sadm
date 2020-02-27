@@ -21,6 +21,7 @@ import asyncio
 import functools
 import logging
 import logging.handlers
+import os
 import prologin.rpc.client
 import prologin.rpc.server
 import socket
@@ -68,7 +69,7 @@ class WorkerNode(prologin.rpc.server.BaseRPCApp):
         super().__init__(*args, secret=secret, **kwargs)
         self.config = config
         self.interval = config["master"]["heartbeat_secs"]
-        self.hostname = socket.gethostname()
+        self.hostname = os.environ.get("POD_IP", socket.gethostname())
         self.port = config["worker"]["port"]
         self.slots = self.max_slots = config["worker"]["available_slots"]
         self.matches = {}

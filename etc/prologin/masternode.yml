@@ -19,7 +19,7 @@ worker:
 # SQL connection informations and queries. If you are using the standard
 # stechec website, do not change the queries!
 sql:
-  host: localhost
+  host: postgres
   port: 5432
   user: concours
   password: "101010"
