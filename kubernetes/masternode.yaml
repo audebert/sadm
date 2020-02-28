@@ -28,18 +28,3 @@ spec:
       - name: nfs
         persistentVolumeClaim:
           claimName: nfs
----
-kind: Service
-apiVersion: v1
-metadata:
-  name: masternode
-  labels:
-    app: masternode
-spec:
-  ports:
-  - port: 8067
-    name: masternode
-  - port: 9021
-    name: monitoring
-  selector:
-    app: masternode

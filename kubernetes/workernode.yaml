@@ -23,21 +23,5 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: workernode
-  labels:
-    app: workernode
-spec:
-  ports:
-  - port: 8068
-    targetPort: 8068
-    name: app
-  - port: 9020
-    targetPort: 9020
-    name: monitoring
-  selector:
-    app: workernode
+        securityContext:
+          privileged: true
