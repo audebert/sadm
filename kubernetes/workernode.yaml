@@ -18,10 +18,18 @@ spec:
         image: gcr.io/halfr-cloud-stechec/sadm
         imagePullPolicy: Always
         command: ["python", "-m", "prologin.workernode"]
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "1"
+          limits:
+            memory: "2Gi"
+            cpu: "2"
         env:
         - name: POD_IP
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
+        # For isolate cgroup management
         securityContext:
           privileged: true

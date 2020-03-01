@@ -7,10 +7,8 @@ metadata:
 spec:
   ports:
   - port: 8068
-    targetPort: 8068
     name: app
   - port: 9020
-    targetPort: 9020
     name: monitoring
   selector:
     app: workernode

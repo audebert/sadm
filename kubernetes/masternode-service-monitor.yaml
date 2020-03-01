@@ -1,0 +1,12 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: masternode
+  labels:
+    app: masternode
+spec:
+  selector:
+    matchLabels:
+      app: masternode
+  endpoints:
+  - port: monitoring
