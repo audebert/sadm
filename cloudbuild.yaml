@@ -1,0 +1,9 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/halfr-cloud-stechec/sadm', '.']
+- name: "gcr.io/cloud-builders/gke-deploy"
+  args:
+  - run
+  - --filename=kubernetes/workernode.yaml
+  - --location=europe-west1-b
+  - --cluster=concours-1
