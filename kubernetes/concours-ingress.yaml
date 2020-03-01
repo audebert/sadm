@@ -1,0 +1,11 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: 2019-ingress
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: prologin2019
+    networking.gke.io/managed-certificates: 2019-certificate
+spec:
+  backend:
+    serviceName: concours
+    servicePort: 80
