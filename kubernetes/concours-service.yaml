@@ -4,6 +4,8 @@ metadata:
   name: concours
   labels:
     app: concours
+  annotations:
+    beta.cloud.google.com/backend-config: '{"default": "config-default"}'
 spec:
   type: LoadBalancer
   ports:
