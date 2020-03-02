@@ -5,11 +5,12 @@ metadata:
   labels:
     app: concours
   annotations:
+    cloud.google.com/load-balancer-type: "Internal"
     beta.cloud.google.com/backend-config: '{"default": "config-default"}'
 spec:
   type: LoadBalancer
   ports:
   - port: 80
-    targetPort: 80
+    name: web
   selector:
     app: concours
