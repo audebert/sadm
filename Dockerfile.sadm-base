@@ -9,11 +9,6 @@ RUN cat /prologin.conf >> /etc/pacman.conf && pacman-key --init && pacman-key --
 # Arch Linux setup
 RUN pacman -Syu --noconfirm --needed base-devel python-virtualenv postgresql-libs git isolate-git stechec2 prologin2019 && pacman -Scc --noconfirm
 
-# TMP FIX
-RUN git clone https://github.com/prologin/stechec2
-RUN cd stechec2/games && git clone https://github.com/prologin/prologin2019
-RUN cd stechec2 && ./waf.py configure --prefix=/usr --with-games=prologin2019 && ./waf.py build install
-
 # Setup venv
 RUN virtualenv -p python3 /env
 ENV PATH /env/bin:$PATH
