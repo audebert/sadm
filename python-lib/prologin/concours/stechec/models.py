@@ -301,6 +301,7 @@ class Match(ExportModelOperationsMixin('match'), models.Model):
         ('pending', 'En cours de calcul'),
         ('done', 'Terminé'),
         ('discarded', 'Abandonné'),
+        ('cancelled', 'Annulé'),
     )
 
     author = models.ForeignKey(
