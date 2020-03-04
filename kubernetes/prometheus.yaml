@@ -9,8 +9,9 @@ spec:
     - key: app
       operator: In
       values:
-      - workernode
+      - concours
       - masternode
+      - workernode
   resources:
     requests:
       memory: 400Mi

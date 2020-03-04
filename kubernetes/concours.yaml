@@ -21,6 +21,13 @@ spec:
         image: gcr.io/halfr-cloud-stechec/sadm
         imagePullPolicy: Always
         command: ["gunicorn", "-b", ":80", "prologin.concours.wsgi"]
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "1"
+          limits:
+            memory: "2Gi"
+            cpu: "2"
         volumeMounts:
           - name: nfs
             mountPath: "/var/prologin/concours_shared"
