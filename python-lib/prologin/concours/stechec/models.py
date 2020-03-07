@@ -270,6 +270,7 @@ class Match(ExportModelOperationsMixin("match"), models.Model):
         ("new", "En attente de lancement"),
         ("pending", "En cours de calcul"),
         ("done", "Terminé"),
+        ("discarded", "Abandonné"),
     )
 
     author = models.ForeignKey(
