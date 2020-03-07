@@ -200,7 +200,7 @@ async def spawn_client(
     env = {"CHAMPION_PATH": champion_path + "/", "HOME": "/tmp"}
 
     # Build command
-    # yapf: disable
+    # fmt: off
     cmd = [
         config['path']['stechec_client'],
         "--name", str(pl_id),
@@ -212,7 +212,7 @@ async def spawn_client(
         "--time", "1500",
         "--verbose", "1",
     ]
-    # yapf: enable
+    # fmt: on
     cmd += ["--client_id", str(order_id)] if order_id is not None else []
 
     if map_contents is not None:
