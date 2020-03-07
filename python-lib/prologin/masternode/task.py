@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Prologin-SADM.  If not, see <http://www.gnu.org/licenses/>.
 
+import abc
 import asyncio
 import os
 import os.path
@@ -71,15 +72,24 @@ def match_path(config, match_id):
     )
 
 
-class Task:
+class Task(abc.ABC):
     def __init__(self, timeout=None):
         self.start_time = None
         self.timeout = timeout
         self.executions = 0
 
-    def execute(self):
+    @property
+    @abc.abstractmethod
+    def slots_taken(self):
+        ...
+
+    async def execute(self):
         self.start_time = time.time()
         self.executions += 1
+
+    @abc.abstractmethod
+    async def redispatch(self):
+        ...
 
     def has_timeout(self):
         return (
@@ -90,8 +100,9 @@ class Task:
 
 
 class CompilationTask(Task):
-    def __init__(self, config, user, champ_id):
+    def __init__(self, config, db, user, champ_id):
         super().__init__(timeout=config["worker"]["compilation_timeout_secs"])
+        self.db = db
         self.user = user
         self.champ_id = champ_id
         self.champ_path = champion_path(config, user, champ_id)
@@ -101,18 +112,32 @@ class CompilationTask(Task):
         return 1
 
     async def execute(self, master, worker):
-        super().execute()
+        await super().execute()
+
         with open(self.champ_path, "rb") as f:
             ctgz = b64encode(f.read()).decode()
+
+        await self.db.execute(
+            "set_champion_status",
+            {"champion_status": "pending", "champion_id": self.champ_id},
+        )
+
         await worker.rpc.compile_champion(self.user, self.champ_id, ctgz)
 
+    async def redispatch(self):
+        await self.db.execute(
+            "set_champion_status",
+            {"champion_status": "new", "champion_id": self.champ_id},
+        )
+
     def __repr__(self):
-        return "<Compilation: {}>".format(self.champ_id)
+        return f"<Compilation: {self.champ_id}>"
 
 
 class MatchTask(Task):
-    def __init__(self, config, mid, players, map_contents):
+    def __init__(self, config, db, mid, players, map_contents):
         super().__init__(timeout=config["worker"]["match_timeout_secs"])
+        self.db = db
         self.mid = mid
         self.map_contents = map_contents
         self.players = {}
@@ -124,15 +149,33 @@ class MatchTask(Task):
                 ctgz = b64encode(f.read()).decode()
             self.players[mpid] = (cid, ctgz)
 
+    def __repr__(self):
+        return f"<Match: {self.mid}>"
+
     @property
     def slots_taken(self):
         return 5
 
     async def execute(self, master, worker):
-        super().execute()
+        await super().execute()
+
         try:
             os.makedirs(self.match_path)
         except OSError:
             pass
 
+        await self.db.execute(
+            "set_match_status", {"match_status": "pending", "match_id": self.mid}
+        )
+
         await worker.rpc.run_match(self.mid, self.players, self.map_contents)
+
+    async def redispatch(self):
+        await self.db.execute(
+            "set_match_status", {"match_status": "new", "match_id": self.mid}
+        )
+
+    async def discard(self):
+        await self.db.execute(
+            "set_match_status", {"match_status": "discarded", "match_id": self.mid}
+        )
