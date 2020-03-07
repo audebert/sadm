@@ -7,7 +7,7 @@ COPY arch/prologin.conf /
 RUN cat /prologin.conf >> /etc/pacman.conf && pacman-key --init && pacman-key --add prologin.pub && pacman-key --lsign-key prologin
 
 # Arch Linux setup
-RUN pacman -Syu --noconfirm --needed base-devel python-virtualenv postgresql-libs git isolate-git stechec2 prologin2019 && pacman -Scc --noconfirm
+RUN pacman -Syu --noconfirm --needed base-devel python-virtualenv postgresql-libs git isolate-git jdk-openjdk jre-openjdk-headless stechec2 prologin2019 && pacman -Scc --noconfirm
 
 # Setup venv
 RUN virtualenv -p python3 /env
