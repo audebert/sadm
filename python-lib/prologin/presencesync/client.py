@@ -24,16 +24,17 @@ import logging
 import prologin.config
 import prologin.synchronisation
 
-SUB_CFG = prologin.config.load('presencesync-sub')
+SUB_CFG = prologin.config.load("presencesync-sub")
 
 
 class Client(prologin.synchronisation.Client):
     def get_list(self):
         """Return a mapping: login -> hostname for all logged in users."""
-        r = self.send_request('/get_list', self.sub_secret, {}, method='get')
+        r = self.send_request("/get_list", self.sub_secret, {}, method="get")
         if r.status_code != 200:
             raise RuntimeError(
-                'Cannot get the list of logged in users: {}'.format(r.text))
+                "Cannot get the list of logged in users: {}".format(r.text)
+            )
         else:
             return json.loads(r.text)
 
@@ -43,13 +44,11 @@ class Client(prologin.synchronisation.Client):
         otherwise.
         """
         r = self.send_request(
-            '/login', self.pub_secret,
-            {'login': login, 'hostname': hostname}
+            "/login", self.pub_secret, {"login": login, "hostname": hostname}
         )
-        logging.debug('Request login: PresenceSync status code is %s',
-                      r.status_code)
+        logging.debug("Request login: PresenceSync status code is %s", r.status_code)
         if r.status_code != 200:
-            return r.text or 'No reason given'
+            return r.text or "No reason given"
         else:
             return None
 
@@ -59,48 +58,49 @@ class Client(prologin.synchronisation.Client):
         """
         # Just ignore the answer.
         self.send_request(
-            '/heartbeat', self.pub_secret,
-            {'login': login, 'hostname': hostname}
+            "/heartbeat", self.pub_secret, {"login": login, "hostname": hostname}
         )
 
     def remove_expired(self):
         """Remove expired logins."""
         # Just ignore the answer.
-        self.send_request(
-            '/remove_expired', self.pub_secret,
-            {}
-        )
+        self.send_request("/remove_expired", self.pub_secret, {})
 
 
 class AsyncClient(prologin.synchronisation.AsyncClient):
     async def get_list(self):
-        r = await self.send_request('/get_list', self.sub_secret, {}, 'get')
+        r = await self.send_request("/get_list", self.sub_secret, {}, "get")
         return await r.json()
 
     async def request_login(self, login, hostname):
-        r = await self.send_request('/login', self.pub_secret,
-                                    {'login': login, 'hostname': hostname})
+        r = await self.send_request(
+            "/login", self.pub_secret, {"login": login, "hostname": hostname}
+        )
         logging.debug("Request login: PresenceSync status code is %s", r.status)
         return (await r.text()) or "No reason given"
 
     async def send_heartbeat(self, login, hostname):
-        await self.send_request('/heartbeat', self.pub_secret,
-                                {'login': login, 'hostname': hostname})
+        await self.send_request(
+            "/heartbeat", self.pub_secret, {"login": login, "hostname": hostname}
+        )
 
     async def remove_expired(self):
-        await self.send_request('/remove_expired', self.pub_secret, {})
+        await self.send_request("/remove_expired", self.pub_secret, {})
 
 
 def _connect_args(publish):
     if publish:
-        pub_secret = prologin.config.load('presencesync-pub')['shared_secret']
+        pub_secret = prologin.config.load("presencesync-pub")["shared_secret"]
     else:
         pub_secret = None
-    url = SUB_CFG['url']
-    sub_secret = SUB_CFG['shared_secret']
-    logging.info("Creating PresenceSync connection object: url=%s, publish=%s",
-                 url, pub_secret is not None)
-    return url, 'login', pub_secret, sub_secret
+    url = SUB_CFG["url"]
+    sub_secret = SUB_CFG["shared_secret"]
+    logging.info(
+        "Creating PresenceSync connection object: url=%s, publish=%s",
+        url,
+        pub_secret is not None,
+    )
+    return url, "login", pub_secret, sub_secret
 
 
 def connect(publish=False):

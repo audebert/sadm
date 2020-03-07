@@ -26,7 +26,7 @@ class Client:
     def __init__(self, url):
         self.url = url
 
-    def send_request(self, resource, secret, msg, url=None, method='post'):
+    def send_request(self, resource, secret, msg, url=None, method="post"):
         """Send an request that is authenticated using `secret` and that
         contains `msg` (a JSON data structure) to `resource`. Use client
         default URL if `url` is None. Return the request object.
@@ -34,19 +34,19 @@ class Client:
         try:
             data = json.dumps(msg)
         except TypeError:
-            raise ValueError('non serializable argument type')
+            raise ValueError("non serializable argument type")
 
         full_url = urllib.parse.urljoin(url or self.url, resource)
         args = {
-            'data': data,
-            'hmac': prologin.timeauth.generate_token(secret, data),
+            "data": data,
+            "hmac": prologin.timeauth.generate_token(secret, data),
         }
-        if method == 'get':
+        if method == "get":
             return requests.get(full_url, params=args)
-        elif method == 'post':
+        elif method == "post":
             return requests.post(full_url, data=args)
         else:
-            raise ValueError('Unsupported method: {}'.format(method))
+            raise ValueError("Unsupported method: {}".format(method))
 
 
 class AsyncClient:
@@ -56,8 +56,7 @@ class AsyncClient:
         self.timeout = timeout
         self.url = url
         self.client = aiohttp.client.ClientSession(
-            raise_for_status=True,
-            timeout=self.timeout,
+            raise_for_status=True, timeout=self.timeout,
         )
 
     async def __aenter__(self):
@@ -67,19 +66,18 @@ class AsyncClient:
         await self.client.close()
         self.client = None
 
-    async def send_request(self, resource, secret, msg, url=None,
-                           method='post'):
+    async def send_request(self, resource, secret, msg, url=None, method="post"):
         full_url = urllib.parse.urljoin(url or self.url, resource)
         data = json.dumps(msg)
         args = {
-            'data': data,
-            'hmac': prologin.timeauth.generate_token(secret, data),
+            "data": data,
+            "hmac": prologin.timeauth.generate_token(secret, data),
         }
 
-        if method == 'get':
+        if method == "get":
             async with self.client.get(full_url, params=args) as r:
                 return r
-        elif method == 'post':
+        elif method == "post":
             async with self.client.post(full_url, data=args) as r:
                 return r
 

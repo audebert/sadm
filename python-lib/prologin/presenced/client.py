@@ -38,30 +38,26 @@ def is_prologin_user(user):
 
 
 class Client(prologin.webapi.Client):
-
     def __init__(self, url, secret):
         super(Client, self).__init__(url)
-        self.secret = secret.encode('ascii')
+        self.secret = secret.encode("ascii")
 
     def send_heartbeat(self):
-        self.send_request('/send_heartbeat', self.secret, {})
+        self.send_request("/send_heartbeat", self.secret, {})
 
     def request_login(self, login):
         """Return None if login is accepted, a reason if not."""
-        r = self.send_request(
-            '/login', self.secret,
-            {'login': login}
-        )
-        logging.debug('Request login status code: %s', r.status_code)
+        r = self.send_request("/login", self.secret, {"login": login})
+        logging.debug("Request login status code: %s", r.status_code)
         if r.status_code != 200:
-            return r.text or 'No reason given'
+            return r.text or "No reason given"
         else:
             return None
 
 
 def connect():
-    CFG = prologin.config.load('presenced-client')
-    url = CFG['url']
-    secret = CFG['shared_secret']
-    logging.info('Creating Presenced client connection object: url=%s', url)
+    CFG = prologin.config.load("presenced-client")
+    url = CFG["url"]
+    secret = CFG["shared_secret"]
+    logging.info("Creating Presenced client connection object: url=%s", url)
     return Client(url, secret)

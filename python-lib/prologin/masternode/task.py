@@ -27,27 +27,48 @@ from base64 import b64decode, b64encode
 
 
 def champion_path(config, user, cid):
-    return os.path.join(config['contest']['directory'],
-            config['contest']['game'], 'champions', user, str(cid),
-            'champion.tgz')
+    return os.path.join(
+        config["contest"]["directory"],
+        config["contest"]["game"],
+        "champions",
+        user,
+        str(cid),
+        "champion.tgz",
+    )
+
 
 def champion_compiled_path(config, user, cid):
-    return os.path.join(config['contest']['directory'],
-            config['contest']['game'], 'champions', user, str(cid),
-            'champion-compiled.tgz')
+    return os.path.join(
+        config["contest"]["directory"],
+        config["contest"]["game"],
+        "champions",
+        user,
+        str(cid),
+        "champion-compiled.tgz",
+    )
 
 
 def clog_path(config, user, cid):
-    return os.path.join(config['contest']['directory'],
-            config['contest']['game'], 'champions', user, str(cid),
-            'compilation.log')
+    return os.path.join(
+        config["contest"]["directory"],
+        config["contest"]["game"],
+        "champions",
+        user,
+        str(cid),
+        "compilation.log",
+    )
 
 
 def match_path(config, match_id):
     match_id_high = "{:03}".format(match_id // 1000)
     match_id_low = "{:03}".format(match_id % 1000)
-    return os.path.join(config['contest']['directory'],
-            config['contest']['game'], 'matches', match_id_high, match_id_low)
+    return os.path.join(
+        config["contest"]["directory"],
+        config["contest"]["game"],
+        "matches",
+        match_id_high,
+        match_id_low,
+    )
 
 
 class Task:
@@ -61,14 +82,16 @@ class Task:
         self.executions += 1
 
     def has_timeout(self):
-        return (self.timeout is not None and
-                self.start_time is not None and
-                time.time() > self.start_time + self.timeout)
+        return (
+            self.timeout is not None
+            and self.start_time is not None
+            and time.time() > self.start_time + self.timeout
+        )
 
 
 class CompilationTask(Task):
     def __init__(self, config, user, champ_id):
-        super().__init__(timeout=config['worker']['compilation_timeout_secs'])
+        super().__init__(timeout=config["worker"]["compilation_timeout_secs"])
         self.user = user
         self.champ_id = champ_id
         self.champ_path = champion_path(config, user, champ_id)
@@ -79,7 +102,7 @@ class CompilationTask(Task):
 
     async def execute(self, master, worker):
         super().execute()
-        with open(self.champ_path, 'rb') as f:
+        with open(self.champ_path, "rb") as f:
             ctgz = b64encode(f.read()).decode()
         await worker.rpc.compile_champion(self.user, self.champ_id, ctgz)
 
@@ -89,7 +112,7 @@ class CompilationTask(Task):
 
 class MatchTask(Task):
     def __init__(self, config, mid, players, map_contents):
-        super().__init__(timeout=config['worker']['match_timeout_secs'])
+        super().__init__(timeout=config["worker"]["match_timeout_secs"])
         self.mid = mid
         self.map_contents = map_contents
         self.players = {}
@@ -97,7 +120,7 @@ class MatchTask(Task):
 
         for (cid, mpid, user) in players:
             cpath = champion_compiled_path(config, user, cid)
-            with open(cpath, 'rb') as f:
+            with open(cpath, "rb") as f:
                 ctgz = b64encode(f.read()).decode()
             self.players[mpid] = (cid, ctgz)
 

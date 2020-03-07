@@ -35,12 +35,12 @@ def setup_logging(program, verbose=True, local=LOG_STDERR):
       verbose: If true, log more messages (DEBUG instead of INFO).
       local: If true, log to stderr as well as syslog.
     """
-    loggers = [logging.handlers.SysLogHandler('/dev/log')]
+    loggers = [logging.handlers.SysLogHandler("/dev/log")]
     if local:
         loggers.append(logging.StreamHandler())
     for logger in loggers:
-        logger.setFormatter(logging.Formatter(
-            program + ': [%(levelname)s] %(message)s'
-        ))
-        logging.getLogger('').addHandler(logger)
-    logging.getLogger('').setLevel(logging.DEBUG if verbose else logging.INFO)
+        logger.setFormatter(
+            logging.Formatter(program + ": [%(levelname)s] %(message)s")
+        )
+        logging.getLogger("").addHandler(logger)
+    logging.getLogger("").setLevel(logging.DEBUG if verbose else logging.INFO)

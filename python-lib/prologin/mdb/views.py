@@ -35,8 +35,7 @@ class MDBServer(prologin.rpc.server.BaseRPCApp):
           mtype: machine type, either user/orga/cluster/service
           room: physical room location, either pasteur/alt/cluster/other
         """
-        fields = {'hostname', 'ip', 'aliases', 'mac', 'rfs', 'hfs', 'mtype',
-                  'room'}
+        fields = {"hostname", "ip", "aliases", "mac", "rfs", "hfs", "mtype", "room"}
         check_filter_fields(fields, kwargs)
 
         machines = Machine.objects.filter(**kwargs)
@@ -54,7 +53,7 @@ class MDBServer(prologin.rpc.server.BaseRPCApp):
           hfs: associated home file server
           room: physical room location, either pasteur/alt/cluster/other
         """
-        fields = {'name', 'chassis', 'rfs', 'hfs', 'room'}
+        fields = {"name", "chassis", "rfs", "hfs", "room"}
         check_filter_fields(fields, kwargs)
         switches = Switch.objects.filter(**kwargs)
         switches = [s.to_dict() for s in switches]
@@ -63,13 +62,13 @@ class MDBServer(prologin.rpc.server.BaseRPCApp):
     @prologin.rpc.remote_method(auth_required=False)
     async def register(self, hostname, mac, rfs, hfs, room, mtype):
         try:
-            key = VolatileSetting.objects.get(key='allow_self_registration')
+            key = VolatileSetting.objects.get(key="allow_self_registration")
             authorized = key.value_bool
         except VolatileSetting.DoesNotExist:
             authorized = False
 
         if not authorized:
-            raise RuntimeError('self registration is disabled')
+            raise RuntimeError("self registration is disabled")
 
         machine = Machine()
         machine.hostname = hostname
@@ -81,13 +80,13 @@ class MDBServer(prologin.rpc.server.BaseRPCApp):
         try:
             machine.allocate_ip()
         except Exception:
-            raise RuntimeError('unable to allocate an IP address')
+            raise RuntimeError("unable to allocate an IP address")
 
         machine.full_clean()
 
         try:
             machine.save()
         except Exception:
-            raise RuntimeError('unable to register, duplicate name?')
+            raise RuntimeError("unable to register, duplicate name?")
 
         return machine.ip

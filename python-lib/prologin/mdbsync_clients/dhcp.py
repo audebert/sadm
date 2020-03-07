@@ -29,22 +29,23 @@ def update_dhcp_config(machines, metadata):
     fragments = []
     for m in machines.values():
         fragment = (
-            'host %(hostname)s {\n'
-            '\thardware ethernet %(mac)s;\n'
-            '\tfixed-address %(ip)s;\n'
+            "host %(hostname)s {\n"
+            "\thardware ethernet %(mac)s;\n"
+            "\tfixed-address %(ip)s;\n"
             '\toption host-name "%(hostname)s";\n'
-            '}\n'
+            "}\n"
         )
         fragments.append(fragment % m)
 
-    with open('/etc/dhcpd/generated.conf', 'w') as fp:
-        fp.write('\n'.join(fragments))
+    with open("/etc/dhcpd/generated.conf", "w") as fp:
+        fp.write("\n".join(fragments))
 
     logging.warning("Reloading DHCP config")
-    if os.system('dhcpd -t'):
-        raise RuntimeError('DHCP config check failed. Aborting.')
-    os.system('systemctl restart dhcpd4')
+    if os.system("dhcpd -t"):
+        raise RuntimeError("DHCP config check failed. Aborting.")
+    os.system("systemctl restart dhcpd4")
 
-if __name__ == '__main__':
-    prologin.log.setup_logging('mdbdhcp')
+
+if __name__ == "__main__":
+    prologin.log.setup_logging("mdbdhcp")
     prologin.mdbsync.client.connect().poll_updates(update_dhcp_config)

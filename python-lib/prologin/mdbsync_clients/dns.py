@@ -25,8 +25,8 @@ import prologin.mdbsync.client
 
 
 def build_zone(name, records):
-    logging.info('Building zone file for %r', name)
-    path = os.path.join('/etc/named', 'generated_%s.zone' % name)
+    logging.info("Building zone file for %r", name)
+    path = os.path.join("/etc/named", "generated_%s.zone" % name)
     if not os.path.exists(path):
         serial = 1
     else:
@@ -34,31 +34,31 @@ def build_zone(name, records):
         # \t\t\t1 ; @@SERIAL@@
         with open(path) as fp:
             text = fp.read()
-            comment_pos = text.index('@@SERIAL@@')
-            serial_pos = text.rindex('\t', 0, comment_pos) + 1
-            serial_end_pos = text.index(' ', serial_pos, comment_pos)
+            comment_pos = text.index("@@SERIAL@@")
+            serial_pos = text.rindex("\t", 0, comment_pos) + 1
+            serial_end_pos = text.index(" ", serial_pos, comment_pos)
             serial = int(text[serial_pos:serial_end_pos]) + 1
 
     ZONE_HEADER = (
-        '; THIS IS A GENERATED FILE\n'
-        '; Do not modify it manually - see mdbdns.py\n'
-        '$TTL\t10\n'
-        '@\tIN\tSOA\tns.prolo.\thostmaster.ns.prolo.\t(\n'
-        '\t\t\t%(serial)s ; @@SERIAL@@\n'
-        '\t\t\t1200 ; Refresh\n'
-        '\t\t\t60 ; Retry\n'
-        '\t\t\t360000 ; Expire\n'
-        '\t\t\t10 ); Negative TTL\n'
-        '\t\tNS\tns.prolo.\n'
-        '\n'
-        '; Auto-generated zone\n'
+        "; THIS IS A GENERATED FILE\n"
+        "; Do not modify it manually - see mdbdns.py\n"
+        "$TTL\t10\n"
+        "@\tIN\tSOA\tns.prolo.\thostmaster.ns.prolo.\t(\n"
+        "\t\t\t%(serial)s ; @@SERIAL@@\n"
+        "\t\t\t1200 ; Refresh\n"
+        "\t\t\t60 ; Retry\n"
+        "\t\t\t360000 ; Expire\n"
+        "\t\t\t10 ); Negative TTL\n"
+        "\t\tNS\tns.prolo.\n"
+        "\n"
+        "; Auto-generated zone\n"
     )
 
-    zone = ZONE_HEADER % { 'serial': serial }
-    zone += '\n'.join('\t'.join(record) for record in records)
-    zone += '\n'
+    zone = ZONE_HEADER % {"serial": serial}
+    zone += "\n".join("\t".join(record) for record in records)
+    zone += "\n"
 
-    with open(path, 'w') as fp:
+    with open(path, "w") as fp:
         fp.write(zone)
 
 
@@ -68,43 +68,48 @@ def build_alien_revdns_zone():
     It is fully static and could in theory be only built once, but meh.
     """
     records = [
-        (str(i), 'IN', 'PTR', 'unknown-%d.alien.prolo.' % i)
-        for i in range(1, 254)
+        (str(i), "IN", "PTR", "unknown-%d.alien.prolo." % i) for i in range(1, 254)
     ]
-    records.append(('254', 'IN', 'PTR', 'gw.alien.prolo.'))
-    build_zone('250.168.192.in-addr.arpa', records)
+    records.append(("254", "IN", "PTR", "gw.alien.prolo."))
+    build_zone("250.168.192.in-addr.arpa", records)
 
 
 def build_machines_revdns_zone(machines, mtype, ip):
-    machines = [m for m in machines if m['mtype'] in mtype]
+    machines = [m for m in machines if m["mtype"] in mtype]
 
     records = [
-        (m['ip'].split('.')[-1], 'IN', 'PTR', '%s.prolo.' % m['hostname'])
+        (m["ip"].split(".")[-1], "IN", "PTR", "%s.prolo." % m["hostname"])
         for m in machines
     ]
-    build_zone(ip + '.in-addr.arpa', records)
+    build_zone(ip + ".in-addr.arpa", records)
 
 
 def build_alien_prolo_zone():
     """Alien machines just need to be able to access netboot.
     """
 
-    build_zone('prolo_alien', [('netboot', 'IN', 'A', '192.168.250.254'),
-                               ('ns', 'IN', 'A', '192.168.250.254')])
+    build_zone(
+        "prolo_alien",
+        [
+            ("netboot", "IN", "A", "192.168.250.254"),
+            ("ns", "IN", "A", "192.168.250.254"),
+        ],
+    )
 
 
 def build_normal_prolo_zone(machines):
     records = []
     for m in machines:
-        names = [m['hostname']] + [s.strip() for s in m['aliases'].split(',')
-                                             if s.strip()]
+        names = [m["hostname"]] + [
+            s.strip() for s in m["aliases"].split(",") if s.strip()
+        ]
         for n in names:
-            records.append((n, 'IN', 'A', m['ip']))
-    build_zone('prolo_normal', records)
+            records.append((n, "IN", "A", m["ip"]))
+    build_zone("prolo_normal", records)
 
 
 def reload_zones():
-    os.system('rndc reload')
+    os.system("rndc reload")
 
 
 def update_dns_config(machines_map, metadata):
@@ -112,15 +117,16 @@ def update_dns_config(machines_map, metadata):
 
     logging.warning("MDB update received, generating zones")
     build_alien_revdns_zone()
-    build_machines_revdns_zone(machines, {'user', 'orga'}, '0.168.192')
-    build_machines_revdns_zone(machines, {'service'}, '1.168.192')
-    build_machines_revdns_zone(machines, {'cluster'}, '2.168.192')
+    build_machines_revdns_zone(machines, {"user", "orga"}, "0.168.192")
+    build_machines_revdns_zone(machines, {"service"}, "1.168.192")
+    build_machines_revdns_zone(machines, {"cluster"}, "2.168.192")
     build_alien_prolo_zone()
     build_normal_prolo_zone(machines)
 
     logging.warning("Reloading zones")
     reload_zones()
 
-if __name__ == '__main__':
-    prologin.log.setup_logging('mdbdns')
+
+if __name__ == "__main__":
+    prologin.log.setup_logging("mdbdns")
     prologin.mdbsync.client.connect().poll_updates(update_dns_config)

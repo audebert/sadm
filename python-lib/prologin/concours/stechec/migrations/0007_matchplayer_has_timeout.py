@@ -6,14 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('stechec', '0006_tournamentplayercorrection'),
+        ("stechec", "0006_tournamentplayercorrection"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='matchplayer',
-            name='has_timeout',
-            field=models.BooleanField(default=False,
-                                      verbose_name='has timeout'),
+            model_name="matchplayer",
+            name="has_timeout",
+            field=models.BooleanField(default=False, verbose_name="has timeout"),
         ),
     ]

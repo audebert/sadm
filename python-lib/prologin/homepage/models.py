@@ -21,11 +21,11 @@ from django.db import models
 class Link(models.Model):
     name = models.CharField(max_length=64)
     url = models.CharField(max_length=128)
-    contest_only = models.BooleanField(verbose_name='Contest restricted')
+    contest_only = models.BooleanField(verbose_name="Contest restricted")
     display_order = models.IntegerField()
 
     def __str__(self):
         return self.name
 
     class Meta:
-        ordering = ('display_order', 'name')
+        ordering = ("display_order", "name")

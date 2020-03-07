@@ -70,44 +70,41 @@ def apply_updates(pk, backlog, updates, watch=None):
 
     for update in updates:
 
-        data = update['data']
+        data = update["data"]
         key = data[pk]
 
-        if update['type'] == 'update':
+        if update["type"] == "update":
             # Add key to watched updates if any watched field changes.
             try:
                 old_data = backlog[key]
             except KeyError:
                 # The update must be watched if it creates a new record.
-                updates_metadata[key] = 'created'
+                updates_metadata[key] = "created"
             else:
                 # The update must be watched if all fields are updates or if at
                 # least one watched field has changed.
                 if watch is None or any(
                     data[field] != old_data[field] for field in watch
                 ):
-                    updates_metadata[key] = 'updated'
+                    updates_metadata[key] = "updated"
 
             backlog[key] = data
 
-        elif update['type'] == 'delete':
+        elif update["type"] == "delete":
             if backlog.pop(key, None) is None:
-                logging.error('removing unexisting data')
+                logging.error("removing unexisting data")
             else:
                 # All deletions are watched.
-                updates_metadata[key] = 'deleted'
+                updates_metadata[key] = "deleted"
 
         else:
-            logging.error('invalid update type: %s', update['type'])
+            logging.error("invalid update type: %s", update["type"])
 
     return updates_metadata
 
 
 def items_to_updates(items):
-    return [
-        {'type': 'update', 'data': item}
-        for item in items
-    ]
+    return [{"type": "update", "data": item} for item in items]
 
 
 class BasePubSubQueue:
@@ -116,6 +113,7 @@ class BasePubSubQueue:
     This is a base abstract class. It define common utilities, let
     subclasses implement required methods and let them add other methods.
     """
+
     def __init__(self):
         self.subscribers = set()
 
@@ -126,7 +124,7 @@ class BasePubSubQueue:
 
     def post_updates(self, update_msg):
         """Publish an update message to all subscribers."""
-        logging.info('sending update message: %s', update_msg)
+        logging.info("sending update message: %s", update_msg)
         for callback in self.subscribers:
             callback(json.dumps(update_msg))
 
@@ -134,15 +132,15 @@ class BasePubSubQueue:
         """Register a new subscriber to the queue.  `callback` will be invoked
         for each published update message (including the initial backlog).
         """
-        logging.info('new subscriber arrived, sending the backlog')
+        logging.info("new subscriber arrived, sending the backlog")
         callback(json.dumps(self.get_backlog_message()))
         self.subscribers.add(callback)
-        logging.info('added a new subscriber, count is now %d', len(self.subscribers))
+        logging.info("added a new subscriber, count is now %d", len(self.subscribers))
 
     def unregister_subscriber(self, callback):
         """Remove a subscriber from the queue."""
         self.subscribers.remove(callback)
-        logging.info('removed a subscriber, count is now %d', len(self.subscribers))
+        logging.info("removed a subscriber, count is now %d", len(self.subscribers))
 
 
 class DefaultPubSubQueue(BasePubSubQueue):
@@ -172,16 +170,12 @@ class DefaultPubSubQueue(BasePubSubQueue):
 
 class PollHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
-    @prologin.tornadauth.signature_checked('sub_secret')
+    @prologin.tornadauth.signature_checked("sub_secret")
     def get(self, msg):
-        self.application.pubsub_queue.register_subscriber(
-            self.message_callback
-        )
+        self.application.pubsub_queue.register_subscriber(self.message_callback)
 
     def on_connection_close(self):
-        self.application.pubsub_queue.unregister_subscriber(
-            self.message_callback
-        )
+        self.application.pubsub_queue.unregister_subscriber(self.message_callback)
 
     def message_callback(self, msg):
         self.write(msg + "\n")  # \n mostly for debugging (curl)
@@ -189,7 +183,7 @@ class PollHandler(tornado.web.RequestHandler):
 
 
 class UpdateHandler(tornado.web.RequestHandler):
-    @prologin.tornadauth.signature_checked('pub_secret', check_msg=True)
+    @prologin.tornadauth.signature_checked("pub_secret", check_msg=True)
     def post(self, msg):
         self.application.pubsub_queue.apply_updates(json.loads(msg))
 
@@ -206,8 +200,8 @@ class Server(prologin.web.TornadoApp):
         super().__init__(self.get_handlers(), app_name)
         self.pk = pk
         self.port = port
-        self.pub_secret = pub_secret.encode('utf-8')
-        self.sub_secret = sub_secret.encode('utf-8')
+        self.pub_secret = pub_secret.encode("utf-8")
+        self.sub_secret = sub_secret.encode("utf-8")
         self.pubsub_queue = self.create_pubsub_queue()
 
     def start(self):
@@ -218,8 +212,8 @@ class Server(prologin.web.TornadoApp):
     def get_handlers(self):
         """Return a list of URL/request handlers couples for this server."""
         return [
-            (r'/poll', PollHandler),
-            (r'/update', UpdateHandler),
+            (r"/poll", PollHandler),
+            (r"/update", UpdateHandler),
         ]
 
     def create_pubsub_queue(self):
@@ -234,8 +228,11 @@ class Server(prologin.web.TornadoApp):
                 backlog = self.get_initial_backlog()
                 break
             except Exception as e:
-                logging.exception('unable to get the backlog, retrying in 2s: '
-                                  '%s: %s', type(e).__name__, e)
+                logging.exception(
+                    "unable to get the backlog, retrying in 2s: " "%s: %s",
+                    type(e).__name__,
+                    e,
+                )
                 time.sleep(2)
         return DefaultPubSubQueue(self.pk, backlog)
 
@@ -253,8 +250,8 @@ class Client(prologin.webapi.Client):
     def __init__(self, url, pk, pub_secret=None, sub_secret=None):
         super().__init__(url)
         self.pk = pk
-        self.pub_secret = pub_secret and pub_secret.encode('utf-8')
-        self.sub_secret = sub_secret.encode('utf-8')
+        self.pub_secret = pub_secret and pub_secret.encode("utf-8")
+        self.sub_secret = sub_secret.encode("utf-8")
 
     def send_update(self, update):
         self.send_updates([update])
@@ -263,7 +260,7 @@ class Client(prologin.webapi.Client):
         if self.pub_secret is None:
             raise ValueError("No secret provided, can't send update")
 
-        r = self.send_request('/update', self.pub_secret, updates)
+        r = self.send_request("/update", self.pub_secret, updates)
         if r.status_code != 200:
             raise RuntimeError("Unable to post an update")
 
@@ -282,36 +279,41 @@ class Client(prologin.webapi.Client):
         """
 
         if self.pk is None:
-            raise ValueError('No primary key field name specified')
+            raise ValueError("No primary key field name specified")
         if self.sub_secret is None:
-            raise ValueError('No subscriber shared secret specified')
+            raise ValueError("No subscriber shared secret specified")
 
         while True:
-            params = urllib.parse.urlencode({
-                'data': '{}',
-                'hmac': prologin.timeauth.generate_token(self.sub_secret),
-            })
-            poll_url = urllib.parse.urljoin(self.url, '/poll?%s' % params)
+            params = urllib.parse.urlencode(
+                {
+                    "data": "{}",
+                    "hmac": prologin.timeauth.generate_token(self.sub_secret),
+                }
+            )
+            poll_url = urllib.parse.urljoin(self.url, "/poll?%s" % params)
             try:
                 with urllib.request.urlopen(poll_url) as resp:
                     state = {}  # indexed by self.pk
                     while True:
                         try:
-                            l = resp.readline().decode('utf-8').strip()
+                            l = resp.readline().decode("utf-8").strip()
                             updates = json.loads(l)
                         except Exception:
-                            logging.exception('could not decode updates')
+                            logging.exception("could not decode updates")
                             break
-                        updates_metadata = apply_updates(
-                            self.pk, state, updates, watch)
+                        updates_metadata = apply_updates(self.pk, state, updates, watch)
                         try:
                             callback(state, updates_metadata)
                         except Exception:
-                            logging.exception('error in the synchronisation '
-                                              'client callback')
+                            logging.exception(
+                                "error in the synchronisation " "client callback"
+                            )
             except Exception:
-                logging.exception("connection synchronisation server lost to "
-                                  "url %s; calling exit()!", poll_url)
+                logging.exception(
+                    "connection synchronisation server lost to "
+                    "url %s; calling exit()!",
+                    poll_url,
+                )
                 sys.exit(1)
 
 
@@ -320,8 +322,8 @@ class AsyncClient(prologin.webapi.AsyncClient):
         timeout = aiohttp.ClientTimeout(total=0)
         super().__init__(url, timeout=timeout)
         self.pk = pk
-        self.pub_secret = pub_secret and pub_secret.encode('utf-8')
-        self.sub_secret = sub_secret.encode('utf-8')
+        self.pub_secret = pub_secret and pub_secret.encode("utf-8")
+        self.sub_secret = sub_secret.encode("utf-8")
 
     async def send_update(self, update):
         await self.send_updates([update])
@@ -330,7 +332,7 @@ class AsyncClient(prologin.webapi.AsyncClient):
         if self.pub_secret is None:
             raise ValueError("No secret provided, can't send update")
 
-        await self.send_request('/update', self.pub_secret, updates)
+        await self.send_request("/update", self.pub_secret, updates)
 
     async def poll_updates(self, watch=None):
         """
@@ -350,17 +352,16 @@ class AsyncClient(prologin.webapi.AsyncClient):
 
         while True:
             params = {
-                'data': '{}',
-                'hmac': prologin.timeauth.generate_token(self.sub_secret),
+                "data": "{}",
+                "hmac": prologin.timeauth.generate_token(self.sub_secret),
             }
-            poll_url = urllib.parse.urljoin(self.url, '/poll')
+            poll_url = urllib.parse.urljoin(self.url, "/poll")
             async with self.client.get(poll_url, params=params) as r:
                 state = {}
                 async for line in r.content:
-                    payload = line.decode('utf-8')
+                    payload = line.decode("utf-8")
                     updates = json.loads(payload)
-                    updates_metadata = apply_updates(
-                        self.pk, state, updates, watch)
+                    updates_metadata = apply_updates(self.pk, state, updates, watch)
                     yield state, updates_metadata
 
 

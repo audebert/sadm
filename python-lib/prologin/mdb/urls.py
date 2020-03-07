@@ -20,11 +20,12 @@ from django.contrib import admin
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 from prologin.djangoconf import set_admin_title
+
 set_admin_title(admin, "Machine Database")
 
 urlpatterns = [
-    url(r'', include('django_prometheus.urls')),
-    url(r'', admin.site.urls),
+    url(r"", include("django_prometheus.urls")),
+    url(r"", admin.site.urls),
 ]
 
 urlpatterns += staticfiles_urlpatterns()

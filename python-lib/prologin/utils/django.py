@@ -17,9 +17,9 @@
 
 def check_filter_fields(fields, kwargs):
     for q in kwargs:
-        base = q.split('_')[0]
+        base = q.split("_")[0]
         if base not in fields:
-            raise ValueError('%r is not a valid query argument' % q)
+            raise ValueError("%r is not a valid query argument" % q)
 
 
 def add_warning_to_django_auth_user_model_name():
@@ -28,6 +28,7 @@ def add_warning_to_django_auth_user_model_name():
     this is not the UDB user model, as it's easy to confuse the two.
     """
     from django.contrib.auth import get_user_model
+
     warning = " ⚠ *not* UDB user model ⚠"
     User = get_user_model()
     User._meta.verbose_name += warning
@@ -39,12 +40,11 @@ def default_initial_auth_groups(apps):
     Create Organizer and root groups for Django contrib.auth app.
     To be called in a Django migration.
     """
-    Group = apps.get_model('auth', 'Group')
-    Permission = apps.get_model('auth', 'Permission')
+    Group = apps.get_model("auth", "Group")
+    Permission = apps.get_model("auth", "Permission")
 
     orga = Group.objects.create(name="Organizer")
-    orga.permissions.set(Permission.objects.filter(
-        codename__in=['change_user']))
+    orga.permissions.set(Permission.objects.filter(codename__in=["change_user"]))
 
     root = Group.objects.create(name="root")
     root.permissions.set(Permission.objects.all())

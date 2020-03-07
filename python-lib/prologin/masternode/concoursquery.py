@@ -22,7 +22,7 @@ import aiopg
 import psycopg2
 
 REQUESTS = {
-    'get_champions': '''
+    "get_champions": """
           SELECT
             stechec_champion.id AS id,
             auth_user.username AS name
@@ -32,18 +32,16 @@ REQUESTS = {
             ON auth_user.id = stechec_champion.author_id
           WHERE
             stechec_champion.status = %(champion_status)s
-    ''',
-
-    'set_champion_status': '''
+    """,
+    "set_champion_status": """
           UPDATE
             stechec_champion
           SET
             status = %(champion_status)s
           WHERE
             stechec_champion.id = %(champion_id)s
-    ''',
-
-    'get_matches': '''
+    """,
+    "get_matches": """
           SELECT
             stechec_match.id AS match_id,
             stechec_map.contents AS map_contents,
@@ -64,10 +62,8 @@ REQUESTS = {
             stechec_match.status = %(match_status)s
           GROUP BY
             stechec_match.id, stechec_map.id
-    ''',
-
-
-    'set_match_status': '''
+    """,
+    "set_match_status": """
           UPDATE
             stechec_match
           SET
@@ -75,9 +71,8 @@ REQUESTS = {
           WHERE
             stechec_match.id = %(match_id)s
             AND status <> 'done'
-    ''',
-
-    'set_player_score': '''
+    """,
+    "set_player_score": """
           UPDATE
             stechec_matchplayer
           SET
@@ -85,46 +80,47 @@ REQUESTS = {
             has_timeout = %(player_timeout)s
           WHERE
             stechec_matchplayer.id = %(player_id)s
-    ''',
+    """,
 }
 
 
 class ConcoursQuery:
     def __init__(self, config):
-        self.host = config['sql']['host']
-        self.port = config['sql']['port']
-        self.user = config['sql']['user']
-        self.password = config['sql']['password']
-        self.database = config['sql']['database']
+        self.host = config["sql"]["host"]
+        self.port = config["sql"]["port"]
+        self.user = config["sql"]["user"]
+        self.password = config["sql"]["password"]
+        self.database = config["sql"]["database"]
         self.pool = None
 
     async def connect(self):
         if self.pool is None:
             self.pool = await aiopg.create_pool(
-                    database=self.database,
-                    user=self.user,
-                    password=self.password,
-                    host=self.host,
-                    port=self.port,
-                    maxsize=64)
+                database=self.database,
+                user=self.user,
+                password=self.password,
+                host=self.host,
+                port=self.port,
+                maxsize=64,
+            )
 
     async def execute(self, name, params):
         if name not in REQUESTS:
-            raise AttributeError('No such request')
+            raise AttributeError("No such request")
 
         await self.connect()
         async with self.pool.acquire() as conn:
             async with conn.cursor() as cursor:
                 await cursor.execute(REQUESTS[name], params)
                 try:
-                    res = (await cursor.fetchall())
+                    res = await cursor.fetchall()
                 except psycopg2.ProgrammingError:  # No results
                     return None
         return res
 
     async def executemany(self, name, seq_of_params):
         if name not in REQUESTS:
-            raise AttributeError('No such request')
+            raise AttributeError("No such request")
 
         await self.connect()
         async with self.pool.acquire() as conn:

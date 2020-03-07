@@ -25,19 +25,22 @@ import logging
 import prologin.config
 import prologin.synchronisation
 
-SUB_CFG = prologin.config.load('udbsync-sub')
+SUB_CFG = prologin.config.load("udbsync-sub")
 
 
 def _connect_args(publish):
     if publish:
-        pub_secret = prologin.config.load('udbsync-pub')['shared_secret']
+        pub_secret = prologin.config.load("udbsync-pub")["shared_secret"]
     else:
         pub_secret = None
-    url = SUB_CFG['url']
-    sub_secret = SUB_CFG['shared_secret']
-    logging.info('Creating UDBSync connection object: url=%s, publish=%s',
-                 url, pub_secret is not None)
-    return url, 'login', pub_secret, sub_secret
+    url = SUB_CFG["url"]
+    sub_secret = SUB_CFG["shared_secret"]
+    logging.info(
+        "Creating UDBSync connection object: url=%s, publish=%s",
+        url,
+        pub_secret is not None,
+    )
+    return url, "login", pub_secret, sub_secret
 
 
 def connect(publish=False):

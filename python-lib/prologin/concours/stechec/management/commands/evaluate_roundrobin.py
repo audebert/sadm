@@ -2,8 +2,7 @@ import collections
 import sys
 from django.core.management.base import BaseCommand
 
-from prologin.concours.stechec.models import (Match, Tournament,
-                                              TournamentPlayer)
+from prologin.concours.stechec.models import Match, Tournament, TournamentPlayer
 
 
 class Command(BaseCommand):
@@ -11,29 +10,33 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--scoring',
-            choices=['wins', 'cumulative'],
-            default='wins',
-            help=("The scoring mechanism. 'wins' only counts victories. "
-                  "'cumulative' adds the final scores of each match."))
-        parser.add_argument('tournament_id', type=int)
+            "--scoring",
+            choices=["wins", "cumulative"],
+            default="wins",
+            help=(
+                "The scoring mechanism. 'wins' only counts victories. "
+                "'cumulative' adds the final scores of each match."
+            ),
+        )
+        parser.add_argument("tournament_id", type=int)
 
     def handle(self, *args, **options):
-        tournament_id = options['tournament_id']
+        tournament_id = options["tournament_id"]
         try:
             tournament = Tournament.objects.get(id=tournament_id)
         except Tournament.DoesNotExist:
             sys.exit("Tournament {} does not exist.".format(tournament_id))
 
         matches = Match.objects.filter(tournament=tournament)
-        done = matches.filter(status='done').count()
+        done = matches.filter(status="done").count()
         total = matches.count()
 
         if done < total:
-            sys.exit("The tournament isn't over yet ({} matchs / {})."
-                     .format(done, total))
+            sys.exit(
+                "The tournament isn't over yet ({} matchs / {}).".format(done, total)
+            )
 
-        matches = tournament.matches.prefetch_related('matchplayers')
+        matches = tournament.matches.prefetch_related("matchplayers")
 
         score_wins = collections.defaultdict(int)
         score_cum = collections.defaultdict(int)
@@ -59,8 +62,8 @@ class Command(BaseCommand):
 
         players = tournament.tournamentplayers.all()
         for player in players:
-            if options['scoring'] == 'wins':
+            if options["scoring"] == "wins":
                 player.score = score_wins[player.champion_id]
-            elif options['scoring'] == 'cumulative':
+            elif options["scoring"] == "cumulative":
                 player.score = score_cum[player.champion_id]
-        TournamentPlayer.objects.bulk_update(players, ('score',))
+        TournamentPlayer.objects.bulk_update(players, ("score",))

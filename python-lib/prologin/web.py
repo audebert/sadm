@@ -50,36 +50,39 @@ def exceptions_catched(func):
     """Decorator for function handlers: return a HTTP 500 error when an
     exception is raised.
     """
+
     def wrapper():
         try:
-            return (200, 'OK') + func()
+            return (200, "OK") + func()
         except Exception:
             return (
-                500, 'Error',
-                {'Content-Type': 'text/html'},
-                '<h1>Onoes, internal server error</h1>'
+                500,
+                "Error",
+                {"Content-Type": "text/html"},
+                "<h1>Onoes, internal server error</h1>",
             )
+
     return wrapper
 
 
 @exceptions_catched
 def ping_handler():
-    return {'Content-Type': 'text/plain'}, "pong"
+    return {"Content-Type": "text/plain"}, "pong"
 
 
 @exceptions_catched
 def threads_handler():
     frames = sys._current_frames()
-    text = ['%d threads found\n\n' % len(frames)]
+    text = ["%d threads found\n\n" % len(frames)]
     for i, frame in frames.items():
-        s = 'Thread 0x%x:\n%s\n' % (i, ''.join(traceback.format_stack(frame)))
+        s = "Thread 0x%x:\n%s\n" % (i, "".join(traceback.format_stack(frame)))
         text.append(s)
-    return {'Content-Type': 'text/plain'}, ''.join(text)
+    return {"Content-Type": "text/plain"}, "".join(text)
 
 
 HANDLED_URLS = {
-    '/__ping': ping_handler,
-    '/__threads': threads_handler,
+    "/__ping": ping_handler,
+    "/__threads": threads_handler,
 }
 
 
@@ -91,30 +94,24 @@ class WsgiApp:
         # TODO(delroth): initialize logging
 
     def __call__(self, environ, start_response):
-        if environ['PATH_INFO'] in HANDLED_URLS:
-            handler = HANDLED_URLS[environ['PATH_INFO']]
+        if environ["PATH_INFO"] in HANDLED_URLS:
+            handler = HANDLED_URLS[environ["PATH_INFO"]]
             return self.call_handler(environ, start_response, handler)
         return self.app(environ, start_response)
 
     def call_handler(self, environ, start_response, handler):
         status_code, reason, headers, content = handler()
-        start_response(
-            '{} {}'.format(status_code, reason),
-            list(headers.items())
-        )
-        return [content.encode('utf-8')]
+        start_response("{} {}".format(status_code, reason), list(headers.items()))
+        return [content.encode("utf-8")]
 
 
 class TornadoApp(tornado.web.Application):
     def __init__(self, handlers, app_name):
         # Prepend special handlers, taking care of the Tornado interfacing.
-        handlers = (
-            tuple(
-                (path, self.get_special_handler(handler))
-                for path, handler in HANDLED_URLS.items()
-            )
-            + tuple(handlers)
-        )
+        handlers = tuple(
+            (path, self.get_special_handler(handler))
+            for path, handler in HANDLED_URLS.items()
+        ) + tuple(handlers)
         super(TornadoApp, self).__init__(handlers)
         self.app_name = app_name
 
@@ -126,12 +123,13 @@ class TornadoApp(tornado.web.Application):
         class SpecialHandler(tornado.web.RequestHandler):
             """Wrapper handler for special resources.
             """
+
             def get(self):
                 status_code, reason, headers, content = handler_func()
                 self.set_status(status_code, reason)
                 for name, value in headers.items():
                     self.set_header(name, value)
-                self.write(content.encode('utf-8'))
+                self.write(content.encode("utf-8"))
 
         return SpecialHandler
 
@@ -146,7 +144,7 @@ class AiohttpApp:
 
     def add_wsgi_app(self, wsgi_app):
         wsgi_handler = aiohttp_wsgi.WSGIHandler(wsgi_app)
-        self.app.router.add_route('*', '/{path_info:.*}', wsgi_handler)
+        self.app.router.add_route("*", "/{path_info:.*}", wsgi_handler)
 
     def run(self, **kwargs):
         aiohttp.web.run_app(self.app, print=lambda *_: None, **kwargs)

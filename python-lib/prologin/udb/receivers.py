@@ -22,7 +22,7 @@ from django.dispatch import receiver
 from prologin.synchronisation import UpdateSenderTask
 from prologin.udb.models import User
 
-prologin.log.setup_logging('udb')
+prologin.log.setup_logging("udb")
 
 
 def _udb_send_updates(updates):
@@ -40,11 +40,11 @@ _update_sender = UpdateSenderTask(_udb_send_updates)
 def post_save_handler(sender, instance, created, *args, **kwargs):
     if sender is not User:
         return
-    _update_sender.send({ "type": "update", "data": instance.to_dict() })
+    _update_sender.send({"type": "update", "data": instance.to_dict()})
 
 
 @receiver(pre_delete)
 def pre_delete_handler(sender, instance, *args, **kwargs):
     if sender is not User:
         return
-    _update_sender.send({ "type": "delete", "data": instance.to_dict() })
+    _update_sender.send({"type": "delete", "data": instance.to_dict()})

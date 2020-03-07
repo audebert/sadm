@@ -21,33 +21,31 @@ from prologin.mdb.models import Machine
 
 
 class Command(BaseCommand):
-
     def add_arguments(self, parser):
-        parser.add_argument('--hostname', help='machine_name')
-        parser.add_argument('--aliases', help='DNS aliases (comma separated)')
-        parser.add_argument('--ip', help='Machine IP address')
-        parser.add_argument('--mac', help='Machine MAC address')
-        parser.add_argument('--rfs', help='RFS used by the machine')
-        parser.add_argument('--hfs', help='HFS used by the machine')
-        parser.add_argument('--mtype',
-                    help='Machine type (user/orga/cluster/service)')
-        parser.add_argument('--room',
-                    help='Machine location (pasteur/alt/cluster/other)')
+        parser.add_argument("--hostname", help="machine_name")
+        parser.add_argument("--aliases", help="DNS aliases (comma separated)")
+        parser.add_argument("--ip", help="Machine IP address")
+        parser.add_argument("--mac", help="Machine MAC address")
+        parser.add_argument("--rfs", help="RFS used by the machine")
+        parser.add_argument("--hfs", help="HFS used by the machine")
+        parser.add_argument("--mtype", help="Machine type (user/orga/cluster/service)")
+        parser.add_argument(
+            "--room", help="Machine location (pasteur/alt/cluster/other)"
+        )
 
     def get_opt(self, options, name):
         if name not in options:
-            raise CommandError('please specify --%s' % name)
+            raise CommandError("please specify --%s" % name)
         return options[name]
 
     def handle(self, *args, **options):
         m = Machine()
-        for attr in ('hostname', 'aliases', 'mac', 'rfs', 'hfs',
-                     'mtype', 'room'):
+        for attr in ("hostname", "aliases", "mac", "rfs", "hfs", "mtype", "room"):
             setattr(m, attr, self.get_opt(options, attr))
-        if 'ip' not in options:
+        if "ip" not in options:
             m.allocate_ip()
         else:
-            m.ip = options['ip']
+            m.ip = options["ip"]
         m.full_clean()
         m.save()
 

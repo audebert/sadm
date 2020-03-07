@@ -23,7 +23,7 @@ import prologin.mdb.client
 import prologin.udb.client
 import prologin.webapi
 
-CFG = prologin.config.load('hfs-client')
+CFG = prologin.config.load("hfs-client")
 
 
 class Client(prologin.webapi.Client):
@@ -33,7 +33,7 @@ class Client(prologin.webapi.Client):
         super(Client, self).__init__(None)
         self.url_pattern = url_pattern
         self.host_pattern = host_pattern
-        self.secret = secret.encode('ascii')
+        self.secret = secret.encode("ascii")
 
     def _log_and_raise(self, msg, exn=RuntimeError):
         logging.error(msg)
@@ -45,47 +45,52 @@ class Client(prologin.webapi.Client):
         Return HFS server: (hfs_hostname, hfs_port).
         """
 
-        logging.info('Requesting a HFS for user %s on host %s...', login,
-                     hostname)
+        logging.info("Requesting a HFS for user %s on host %s...", login, hostname)
 
         match = prologin.udb.client.connect().query(login=login)
         if len(match) != 1:
-            self._log_and_raise('No such user: {}'.format(login))
+            self._log_and_raise("No such user: {}".format(login))
         user = match[0]
         match = prologin.mdb.client.connect().query(hostname=hostname)
         if len(match) != 1:
-            self._log_and_raise('No such machine: {}'.format(hostname))
+            self._log_and_raise("No such machine: {}".format(hostname))
         machine = match[0]
 
-        utype = user['group']
-        hfs_id = machine['hfs']
+        utype = user["group"]
+        hfs_id = machine["hfs"]
         hfs_host = self.host_pattern.format(hfs_id)
         hfs_url = self.url_pattern.format(hfs_host)
-        logging.info('Requesting a HFS on %s for user %s on host %s...',
-                     hfs_host, login, hostname)
+        logging.info(
+            "Requesting a HFS on %s for user %s on host %s...",
+            hfs_host,
+            login,
+            hostname,
+        )
 
         r = self.send_request(
-            '/get_hfs',
-            self.secret, {
-                'user': login,
-                'hfs': hfs_id,
-                'utype': utype
-            },
-            url=hfs_url)
+            "/get_hfs",
+            self.secret,
+            {"user": login, "hfs": hfs_id, "utype": utype},
+            url=hfs_url,
+        )
         if r.status_code != 200:
-            self._log_and_raise('Cannot get a HFS: {}'.format(r.text))
+            self._log_and_raise("Cannot get a HFS: {}".format(r.text))
         else:
             info = json.loads(r.text)
 
-        logging.info('Got a HFS for user %s on host %s: %s:%s', login,
-                     hostname, hfs_host, info['port'])
-        return (hfs_host, info['port'])
+        logging.info(
+            "Got a HFS for user %s on host %s: %s:%s",
+            login,
+            hostname,
+            hfs_host,
+            info["port"],
+        )
+        return (hfs_host, info["port"])
 
 
 def connect():
-    url_pattern = CFG['url_pattern']
-    host_pattern = CFG['host_pattern']
-    secret = CFG['shared_secret']
-    logging.info('Creating HFS connection object: host_pattern=%s',
-                 host_pattern)
+    url_pattern = CFG["url_pattern"]
+    host_pattern = CFG["host_pattern"]
+    secret = CFG["shared_secret"]
+    logging.info("Creating HFS connection object: host_pattern=%s", host_pattern)
     return Client(url_pattern, host_pattern, secret)

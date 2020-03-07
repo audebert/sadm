@@ -2,6 +2,6 @@ from django.urls import include, path
 from django.contrib import admin
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', include('dpaste.urls.dpaste')),
+    path("admin/", admin.site.urls),
+    path("", include("dpaste.urls.dpaste")),
 ]

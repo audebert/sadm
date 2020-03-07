@@ -21,8 +21,8 @@ import sys
 
 # Prologin is based in France, use Europe/Paris as the default TZ if none is
 # provided, and en-us as default locale (this is mostly for internal tools).
-_DEFAULT_TZ = 'Europe/Paris'
-_DEFAULT_LANG = 'en-us'
+_DEFAULT_TZ = "Europe/Paris"
+_DEFAULT_LANG = "en-us"
 
 
 def use_profile_config(profile, out=None):
@@ -45,8 +45,10 @@ def use_profile_config(profile, out=None):
         try:
             out = sys._getframe().f_back.f_globals
         except AttributeError:
-            raise RuntimeError("Unable to automagically get the globals "
-                               "dictionary, use the 'out' argument.")
+            raise RuntimeError(
+                "Unable to automagically get the globals "
+                "dictionary, use the 'out' argument."
+            )
 
     _load_config(cfg, out)
     return cfg
@@ -68,10 +70,10 @@ def _load_config(cfg, out):
     """Loads the configuration values to the out dict."""
 
     # Mandatory
-    out['SECRET_KEY'] = cfg.get('secret_key')
-    out['DATABASES'] = cfg.get('db')
+    out["SECRET_KEY"] = cfg.get("secret_key")
+    out["DATABASES"] = cfg.get("db")
 
     # Optional with sane defaults
-    out['DEBUG'] = cfg.get('debug', False)
-    out['TIME_ZONE'] = cfg.get('tz', _DEFAULT_TZ)
-    out['LANGUAGE_CODE'] = cfg.get('lang', _DEFAULT_LANG)
+    out["DEBUG"] = cfg.get("debug", False)
+    out["TIME_ZONE"] = cfg.get("tz", _DEFAULT_TZ)
+    out["LANGUAGE_CODE"] = cfg.get("lang", _DEFAULT_LANG)

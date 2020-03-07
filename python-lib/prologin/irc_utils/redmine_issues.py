@@ -12,23 +12,30 @@ import socket
 @irc3.plugin
 class RedmineIssuePlugin:
     requires = [
-        'irc3.plugins.core',
-        'irc3.plugins.userlist',
-        'irc3.plugins.command',
+        "irc3.plugins.core",
+        "irc3.plugins.userlist",
+        "irc3.plugins.command",
     ]
 
     def __init__(self, bot):
         self.bot = bot
-        self.config = bot.config['hook-receiver']
-        self.channel = bot.config['autojoins'][0].split(' ', 1)[0]  # may contain password
+        self.config = bot.config["hook-receiver"]
+        self.channel = bot.config["autojoins"][0].split(" ", 1)[
+            0
+        ]  # may contain password
         self.lock = Lock()
         self.latest_msg = None
-        logging.info("Starting hoot receiver on %s:%d",
-                     self.config['host'], self.config['port'])
-        asyncio.Task(asyncio.start_server(self.handle_incoming_issue,
-                                          self.config['host'],
-                                          self.config['port'],
-                                          family=socket.AF_INET))
+        logging.info(
+            "Starting hoot receiver on %s:%d", self.config["host"], self.config["port"]
+        )
+        asyncio.Task(
+            asyncio.start_server(
+                self.handle_incoming_issue,
+                self.config["host"],
+                self.config["port"],
+                family=socket.AF_INET,
+            )
+        )
 
     def announce_issue(self, issue):
         # - url
@@ -40,15 +47,15 @@ class RedmineIssuePlugin:
         #   - assigned_to_id, author_id, category_id, closed_on, created_on, description, done_ratio, due_date,
         #     estimated_hours, fixed_version_id, id, is_private, lft, lock_version, parent_id, priority_id,
         #     project_id, rgt, root_id, start_date, status_id, subject, tracker_id, updated_on
-        title = issue['attrs']['subject']
+        title = issue["attrs"]["subject"]
         if len(title) > 90:
             title = title[:90] + "…"
         msg = "\x02\x03{c}New {tracker:<10}\03\02 by \x0312{author:<13}\x03: “{title}” {url}".format(
-            tracker=issue['hattrs']['tracker'],
-            c=5 if issue['attrs']['tracker_id'] == 1 else 3,  # red if bug else green
-            author=issue['author']['username'],
+            tracker=issue["hattrs"]["tracker"],
+            c=5 if issue["attrs"]["tracker_id"] == 1 else 3,  # red if bug else green
+            author=issue["author"]["username"],
             title=title,
-            url="http://redmine{}".format(issue['url']),
+            url="http://redmine{}".format(issue["url"]),
         )
         with self.lock:
             self.latest_msg = msg
@@ -56,7 +63,7 @@ class RedmineIssuePlugin:
         self.bot.privmsg(self.channel, msg)
 
     async def handle_incoming_issue(self, reader, writer):
-        logging.debug("Incoming issue from %r", writer.get_extra_info('peername'))
+        logging.debug("Incoming issue from %r", writer.get_extra_info("peername"))
         data = await reader.readline()
         try:
             data = json.loads(data.decode())
@@ -81,20 +88,19 @@ class RedmineIssuePlugin:
 
 
 def main():
-    config = prologin.config.load('irc-redmine-issues')
-    prologin.log.setup_logging('irc-redmine-issues')
+    config = prologin.config.load("irc-redmine-issues")
+    prologin.log.setup_logging("irc-redmine-issues")
 
-    bot_config = config['irc']
-    bot_config['hook-receiver'] = config['hook-receiver']
-    bot_config['includes'] = [
-        'irc3.plugins.core',
-        'irc3.plugins.command',
+    bot_config = config["irc"]
+    bot_config["hook-receiver"] = config["hook-receiver"]
+    bot_config["includes"] = [
+        "irc3.plugins.core",
+        "irc3.plugins.command",
         __name__,
     ]
     bot = irc3.IrcBot.from_config(bot_config)
     bot.run(forever=True)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-

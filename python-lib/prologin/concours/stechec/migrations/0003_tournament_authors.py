@@ -9,37 +9,67 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('stechec', '0002_initial_data'),
+        ("stechec", "0002_initial_data"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='tournamentmap',
-            options={'ordering': ['-tournament'], 'verbose_name': 'carte utilisée dans le tournoi', 'verbose_name_plural': 'cartes utilisées dans le tournoi'},
+            name="tournamentmap",
+            options={
+                "ordering": ["-tournament"],
+                "verbose_name": "carte utilisée dans le tournoi",
+                "verbose_name_plural": "cartes utilisées dans le tournoi",
+            },
         ),
         migrations.AlterModelOptions(
-            name='tournamentplayer',
-            options={'ordering': ['-tournament', '-score'], 'verbose_name': 'participant au tournoi', 'verbose_name_plural': 'participants au tournoi'},
+            name="tournamentplayer",
+            options={
+                "ordering": ["-tournament", "-score"],
+                "verbose_name": "participant au tournoi",
+                "verbose_name_plural": "participants au tournoi",
+            },
         ),
         migrations.AddField(
-            model_name='tournament',
-            name='author',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.CASCADE, related_name='tournaments', to=settings.AUTH_USER_MODEL, verbose_name='créé par'),
+            model_name="tournament",
+            name="author",
+            field=models.ForeignKey(
+                default=1,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="tournaments",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="créé par",
+            ),
             preserve_default=False,
         ),
         migrations.AlterField(
-            model_name='map',
-            name='author',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='maps', to=settings.AUTH_USER_MODEL, verbose_name='auteur'),
+            model_name="map",
+            name="author",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="maps",
+                to=settings.AUTH_USER_MODEL,
+                verbose_name="auteur",
+            ),
         ),
         migrations.AlterField(
-            model_name='matchplayer',
-            name='champion',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='matchplayers', to='stechec.Champion', verbose_name='champion'),
+            model_name="matchplayer",
+            name="champion",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="matchplayers",
+                to="stechec.Champion",
+                verbose_name="champion",
+            ),
         ),
         migrations.AlterField(
-            model_name='matchplayer',
-            name='match',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='matchplayers', to='stechec.Match', verbose_name='match'),
+            model_name="matchplayer",
+            name="match",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="matchplayers",
+                to="stechec.Match",
+                verbose_name="match",
+            ),
         ),
     ]

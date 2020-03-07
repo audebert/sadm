@@ -23,61 +23,61 @@ import prologin.log
 import prologin.presenced.client
 import prologin.xhack
 
-sys.stderr = open('/tmp/pam_log', 'a')
-prologin.log.setup_logging('pam_presenced')
+sys.stderr = open("/tmp/pam_log", "a")
+prologin.log.setup_logging("pam_presenced")
 
 
 def get_home_dir(login):
-    return '/home/{}'.format(login)
+    return "/home/{}".format(login)
 
 
 def get_block_device(login):
-    return '/dev/nbd0'
+    return "/dev/nbd0"
 
 
 def fail(reason):
     print(reason, file=sys.stderr)
     logging.error(reason)
-    prologin.xhack.run(['/usr/bin/zenity', '--error', '--text', reason])
+    prologin.xhack.run(["/usr/bin/zenity", "--error", "--text", reason])
     sys.exit(1)
 
 
-PAM_TYPE = os.environ['PAM_TYPE']
-PAM_SERVICE = os.environ['PAM_SERVICE']
-login = os.environ['PAM_USER']
+PAM_TYPE = os.environ["PAM_TYPE"]
+PAM_SERVICE = os.environ["PAM_SERVICE"]
+login = os.environ["PAM_USER"]
 
 try:
     is_prologin_user = prologin.presenced.client.is_prologin_user(login)
 except KeyError:
     # The login/password was accepted by pam_unix.so, but user does not exist:
     # should not happen, but forbid anyway.  TODO: notify sysadmins...
-    fail('No such user')
+    fail("No such user")
 
-if PAM_TYPE == 'open_session' and not os.path.ismount(get_home_dir(login)):
+if PAM_TYPE == "open_session" and not os.path.ismount(get_home_dir(login)):
     # Not-prologin users are not resticted at all.
     if not is_prologin_user:
         sys.exit(0)
 
     # Prologin users must use a display manager (not a TTY, nor screen).
-    if PAM_SERVICE not in ('gdm', 'kde', 'slim', 'xdm', 'sddm'):
+    if PAM_SERVICE not in ("gdm", "kde", "slim", "xdm", "sddm"):
         logging.warning(
-            'User %s is not logging in with a graphical display manager',
-            login)
+            "User %s is not logging in with a graphical display manager", login
+        )
 
     # Request the login to Presenced and PresenceSync.
     failure_reason = prologin.presenced.client.connect().request_login(login)
     if failure_reason is not None:
         # Login is forbidden by presenced.
-        fail('Login forbidden: {}'.format(failure_reason))
+        fail("Login forbidden: {}".format(failure_reason))
 
     # Request HOME directory migration and wait for it.
     hfs = prologin.hfs.client.connect()
     try:
         hostname = socket.gethostname()
-        if hostname.endswith('.prolo'):
-            hostname = hostname[:-len('.prolo')]
+        if hostname.endswith(".prolo"):
+            hostname = hostname[: -len(".prolo")]
         else:
-            logging.warning('Hostname does not end with .prolo: %s', hostname)
+            logging.warning("Hostname does not end with .prolo: %s", hostname)
         host, port = hfs.get_hfs(login, hostname)
     except RuntimeError as e:
         fail(str(e))
@@ -98,27 +98,36 @@ if PAM_TYPE == 'open_session' and not os.path.ismount(get_home_dir(login)):
     # netlink family in a systemd-nspawn container.
     #
     # TODO: experiment with '-block-size' values and compare performance
-    if subprocess.check_call([
-            '/usr/sbin/nbd-client', '-nonetlink', '-name', login, host,
-            str(port), block_device
-    ],
-                             stdout=sys.stderr,
-                             stderr=sys.stderr):
-        fail('Cannot get the home directory block device')
-    if subprocess.check_call(['/bin/mount', block_device, home_dir],
-                             stdout=sys.stderr,
-                             stderr=sys.stderr):
-        fail('Cannot mount the home directory')
+    if subprocess.check_call(
+        [
+            "/usr/sbin/nbd-client",
+            "-nonetlink",
+            "-name",
+            login,
+            host,
+            str(port),
+            block_device,
+        ],
+        stdout=sys.stderr,
+        stderr=sys.stderr,
+    ):
+        fail("Cannot get the home directory block device")
+    if subprocess.check_call(
+        ["/bin/mount", block_device, home_dir], stdout=sys.stderr, stderr=sys.stderr
+    ):
+        fail("Cannot mount the home directory")
 
     sys.exit(0)
 
-elif PAM_TYPE == 'close_session':
+elif PAM_TYPE == "close_session":
     if is_prologin_user:
         # Make sure the user has nothing else running
         try:
-            subprocess.check_call(['/usr/bin/pkill', '-9', '-u', login],
-                                  stdout=sys.stderr,
-                                  stderr=sys.stderr)
+            subprocess.check_call(
+                ["/usr/bin/pkill", "-9", "-u", login],
+                stdout=sys.stderr,
+                stderr=sys.stderr,
+            )
         except subprocess.CalledProcessError as e:
             if e.returncode != 1:  # "No processes matched" we don't care
                 raise e
@@ -126,9 +135,10 @@ elif PAM_TYPE == 'close_session':
         # Unmount /home/user
         time.sleep(2)
         subprocess.check_call(
-            ['/bin/umount', '-R', get_home_dir(login)],
+            ["/bin/umount", "-R", get_home_dir(login)],
             stdout=sys.stderr,
-            stderr=sys.stderr)
+            stderr=sys.stderr,
+        )
 
         # And finally stop the nbd client
         block_device = get_block_device(login)
@@ -137,16 +147,18 @@ elif PAM_TYPE == 'close_session':
         # with -nonetlink fails with: Invalid nbd device target /dev/nbd0
         try:
             subprocess.check_call(
-                ['/usr/sbin/nbd-client', '-d', block_device],
+                ["/usr/sbin/nbd-client", "-d", block_device],
                 stdout=sys.stderr,
-                stderr=sys.stderr)
+                stderr=sys.stderr,
+            )
         # here's the workaround : only try without -nonetlink if the above
         # command fails
         except subprocess.CalledProcessError:
             subprocess.check_call(
-                ['/usr/sbin/nbd-client', '-d', '-nonetlink', block_device],
+                ["/usr/sbin/nbd-client", "-d", "-nonetlink", block_device],
                 stdout=sys.stderr,
-                stderr=sys.stderr)
+                stderr=sys.stderr,
+            )
     sys.exit(0)
 
 else:

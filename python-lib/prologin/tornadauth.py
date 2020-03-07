@@ -31,20 +31,17 @@ def signature_checked(secret_name, check_msg=False):
 
     def decorator(func):
         def method_wrapper(self):
-            msg = (
-                self.get_argument('data')
-                if check_msg else
-                None
-            )
+            msg = self.get_argument("data") if check_msg else None
             secret = getattr(self.application, secret_name)
             if not prologin.timeauth.check_token(
-                self.get_argument('hmac'), secret, msg
+                self.get_argument("hmac"), secret, msg
             ):
-                logging.error('INVALID TOKEN!')
-                self.set_status(403, 'Invalid token')
-                self.write('Invalid token')
+                logging.error("INVALID TOKEN!")
+                self.set_status(403, "Invalid token")
+                self.write("Invalid token")
             else:
-                return func(self, self.get_argument('data'))
+                return func(self, self.get_argument("data"))
 
         return method_wrapper
+
     return decorator

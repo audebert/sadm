@@ -27,33 +27,21 @@ respect the following format:
 Look at the provided "usermap.svg" input map for a fully working example.
 """
 
-CFG = prologin.config.load('presencesync_usermap')
+CFG = prologin.config.load("presencesync_usermap")
 
-G_TAG = '{http://www.w3.org/2000/svg}g'
-RECT_TAG = '{http://www.w3.org/2000/svg}rect'
-TEXT_TAG = '{http://www.w3.org/2000/svg}text'
-TSPAN_TAG = '{http://www.w3.org/2000/svg}tspan'
+G_TAG = "{http://www.w3.org/2000/svg}g"
+RECT_TAG = "{http://www.w3.org/2000/svg}rect"
+TEXT_TAG = "{http://www.w3.org/2000/svg}text"
+TSPAN_TAG = "{http://www.w3.org/2000/svg}tspan"
 
 # CSS style for location labels: first line is for the machine name line,
 # second one is for the login line.
 
 STYLES = {
-    'connected_user': (
-        'font-weight: bold;',
-        'fill: #208020; font-weight: bold;'
-    ),
-    'connected_orga': (
-        'font-weight: bold;',
-        'fill: #202080; font-weight: bold;'
-    ),
-    'connected_root': (
-        'font-weight: bold;',
-        'fill: #802020; font-weight: bold;'
-    ),
-    'disconnected': (
-        'font-weight: bold;',
-        'fill: #b0b0b0; font-style: italic;'
-    ),
+    "connected_user": ("font-weight: bold;", "fill: #208020; font-weight: bold;"),
+    "connected_orga": ("font-weight: bold;", "fill: #202080; font-weight: bold;"),
+    "connected_root": ("font-weight: bold;", "fill: #802020; font-weight: bold;"),
+    "disconnected": ("font-weight: bold;", "fill: #b0b0b0; font-style: italic;"),
 }
 
 
@@ -63,15 +51,15 @@ def fill_rect(rect, status=True, registered=False, faulty=False):
     """
 
     if not registered:
-        rect.set('fill', '#a9d0f5')
-        rect.set('style', '')
-        rect.set('stroke', '#2e64fe')
+        rect.set("fill", "#a9d0f5")
+        rect.set("style", "")
+        rect.set("stroke", "#2e64fe")
     elif faulty:
-        rect.set('fill', 'url(#faultystripe)')
-        rect.set('stroke', '#a6a6a6')
-        rect.set('style', '')
+        rect.set("fill", "url(#faultystripe)")
+        rect.set("stroke", "#a6a6a6")
+        rect.set("style", "")
     elif not status:
-        rect.set('style', rect.get('style', '') + ';' + 'fill: #ff0000')
+        rect.set("style", rect.get("style", "") + ";" + "fill: #ff0000")
 
 
 def fill_machine(text, login=None, group=""):
@@ -81,14 +69,14 @@ def fill_machine(text, login=None, group=""):
     """
 
     if login is None:
-        styles = STYLES['disconnected']
-        login = 'libre'
+        styles = STYLES["disconnected"]
+        login = "libre"
     else:
-        styles = STYLES['connected_' + group]
+        styles = STYLES["connected_" + group]
 
     text[1].text = login
     for tspan, style in zip(text, styles):
-        tspan.set('style', style)
+        tspan.set("style", style)
 
 
 mdb_machines = {}
@@ -102,8 +90,7 @@ def generate(map_pattern, output):
     readable file and the `logins` -> hostname mapping.
     """
     host_to_login = {
-        entry['hostname']: entry['login']
-        for entry in presence_data.values()
+        entry["hostname"]: entry["login"] for entry in presence_data.values()
     }
 
     tree = ET.parse(map_pattern)
@@ -112,19 +99,15 @@ def generate(map_pattern, output):
             continue
         rect = g[0]
         text = g[1]
-        if (
-            len(text) == 2 and
-            text[0].tag == TSPAN_TAG and
-            text[1].tag == TSPAN_TAG
-        ):
+        if len(text) == 2 and text[0].tag == TSPAN_TAG and text[1].tag == TSPAN_TAG:
             machine_name = text[0].text
             login = host_to_login.get(machine_name, None)
 
             group = "user"  # default group
             # Search user group
             for udb_user in udb_users.values():
-                if udb_user['login'] == login:
-                    group = udb_user['group']
+                if udb_user["login"] == login:
+                    group = udb_user["group"]
                     break
 
             status = ping_status.get(machine_name, True)
@@ -132,34 +115,40 @@ def generate(map_pattern, output):
             faulty = False
             registered = False
             for machine in mdb_machines.values():
-                if machine['hostname'] == machine_name:
-                    faulty = machine['is_faulty']
+                if machine["hostname"] == machine_name:
+                    faulty = machine["is_faulty"]
                     registered = True
                     break
 
             fill_machine(text, login, group)
             fill_rect(rect, status, registered, faulty)
 
-    tree.write(output, encoding='utf-8', xml_declaration=True)
+    tree.write(output, encoding="utf-8", xml_declaration=True)
 
 
 def update_map():
-    logging.info('Upgrade using updates')
+    logging.info("Upgrade using updates")
     try:
-        with open(CFG['map_pattern'], 'rb') as map_pattern:
-            with open(CFG['output'], 'wb') as output:
+        with open(CFG["map_pattern"], "rb") as map_pattern:
+            with open(CFG["output"], "wb") as output:
                 generate(map_pattern, output)
     except IOError:
-        logging.exception('Cannot open files')
+        logging.exception("Cannot open files")
     except ET.ParseError:
-        logging.exception('Cannot parse the map pattern')
+        logging.exception("Cannot parse the map pattern")
 
 
 async def ping_machine(hostname):
     proc = await asyncio.create_subprocess_exec(
-            'ping', '-c', '1', '-W', '2', hostname,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL)
+        "ping",
+        "-c",
+        "1",
+        "-W",
+        "2",
+        hostname,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
     return hostname, (await proc.wait() == 0)
 
 
@@ -167,7 +156,7 @@ async def update_ping():
     loop = asyncio.get_event_loop()
 
     async def distributed_ping():
-        tasks = [ping_machine(m['hostname']) for m in mdb_machines.values()]
+        tasks = [ping_machine(m["hostname"]) for m in mdb_machines.values()]
         if not tasks:
             return
 
@@ -182,8 +171,8 @@ async def update_ping():
 
         try:
             new_ping_status = {
-                hostname: status
-                async for hostname, status in distributed_ping()}
+                hostname: status async for hostname, status in distributed_ping()
+            }
 
             if new_ping_status != ping_status:
                 ping_status.clear()
@@ -221,6 +210,6 @@ async def poll_all():
     [task.cancel() for task in tasks]
 
 
-if __name__ == '__main__':
-    prologin.log.setup_logging('presencesync_usermap')
+if __name__ == "__main__":
+    prologin.log.setup_logging("presencesync_usermap")
     asyncio.run(poll_all())

@@ -21,7 +21,7 @@ import os
 import os.path
 import yaml
 
-DEFAULT_CFG_DIR = '/etc/prologin'
+DEFAULT_CFG_DIR = "/etc/prologin"
 LOADED_CONFIGS = {}
 
 
@@ -42,16 +42,15 @@ def load(profile):
     except KeyError:
         pass
 
-    cfg_filename = '{}.yml'.format(profile)
-    cfg_directory = os.environ.get('CFG_DIR', DEFAULT_CFG_DIR)
+    cfg_filename = "{}.yml".format(profile)
+    cfg_directory = os.environ.get("CFG_DIR", DEFAULT_CFG_DIR)
     cfg_path = os.path.join(cfg_directory, cfg_filename)
 
     try:
-        with open(cfg_path, 'r') as cfg_fp:
+        with open(cfg_path, "r") as cfg_fp:
             cfg = yaml.safe_load(cfg_fp)
     except IOError:
-        raise ConfigReadError("%s does not exist (specify CFG_DIR?)"
-                              % cfg_path)
+        raise ConfigReadError("%s does not exist (specify CFG_DIR?)" % cfg_path)
 
     LOADED_CONFIGS[profile] = cfg
 

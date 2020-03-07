@@ -23,29 +23,34 @@ from django_prometheus.models import ExportModelOperationsMixin
 import prologin.utils.django
 
 
-class User(ExportModelOperationsMixin('user'), models.Model):
+class User(ExportModelOperationsMixin("user"), models.Model):
     TYPES = (
-        ('user', 'Contestant'),
-        ('orga', 'Organizer'),
-        ('root', 'root'),
+        ("user", "Contestant"),
+        ("orga", "Organizer"),
+        ("root", "root"),
     )
 
-    LOGIN_REGEX = r'^([a-z_][a-z0-9_]{0,30})$'
+    LOGIN_REGEX = r"^([a-z_][a-z0-9_]{0,30})$"
 
-    login = models.CharField(max_length=32, unique=True, db_index=True,
-                             validators=[RegexValidator(regex=LOGIN_REGEX)])
-    firstname = models.CharField(max_length=64, verbose_name='First name')
-    lastname = models.CharField(max_length=64, verbose_name='Last name')
-    uid = models.IntegerField(unique=True, db_index=True, verbose_name='UID')
+    login = models.CharField(
+        max_length=32,
+        unique=True,
+        db_index=True,
+        validators=[RegexValidator(regex=LOGIN_REGEX)],
+    )
+    firstname = models.CharField(max_length=64, verbose_name="First name")
+    lastname = models.CharField(max_length=64, verbose_name="Last name")
+    uid = models.IntegerField(unique=True, db_index=True, verbose_name="UID")
     group = models.CharField(max_length=20, choices=TYPES)
-    password = models.CharField(max_length=64, help_text='pwgen -cnB 8')
-    shell = models.CharField(max_length=64, default='/bin/bash')
-    ssh_key = models.CharField(max_length=4096, null=True, blank=True,
-                               verbose_name='SSH public key')
+    password = models.CharField(max_length=64, help_text="pwgen -cnB 8")
+    shell = models.CharField(max_length=64, default="/bin/bash")
+    ssh_key = models.CharField(
+        max_length=4096, null=True, blank=True, verbose_name="SSH public key"
+    )
 
     @property
     def realname(self):
-        return '{} {}'.format(self.firstname, self.lastname)
+        return "{} {}".format(self.firstname, self.lastname)
 
     def __str__(self):
         return self.login
@@ -57,42 +62,45 @@ class User(ExportModelOperationsMixin('user'), models.Model):
 
     def to_dict(self):
         return {
-            'login': self.login,
-            'firstname': self.firstname,
-            'lastname': self.lastname,
-            'uid': self.uid,
-            'group': self.group,
-            'password': self.password,
-            'shell': self.shell,
-            'ssh_key': self.ssh_key,
-            'id': self.pk,
+            "login": self.login,
+            "firstname": self.firstname,
+            "lastname": self.lastname,
+            "uid": self.uid,
+            "group": self.group,
+            "password": self.password,
+            "shell": self.shell,
+            "ssh_key": self.ssh_key,
+            "id": self.pk,
         }
 
     def allocate_uid(self):
         pool = UIDPool.objects.get(group=self.group)
-        pool.last = F('last') + 1  # Atomic increment
+        pool.last = F("last") + 1  # Atomic increment
         pool.save()
         pool.refresh_from_db()
         self.uid = pool.base + pool.last
 
     class Meta:
-        ordering = ('group', 'login',)
+        ordering = (
+            "group",
+            "login",
+        )
 
 
-class UIDPool(ExportModelOperationsMixin('uidpool'), models.Model):
-    group = models.CharField(max_length=20, choices=User.TYPES, unique=True,
-                             verbose_name='For type')
-    base = models.IntegerField(unique=True, verbose_name='Base UID')
-    last = models.IntegerField(blank=True, default=0,
-                               verbose_name='Last allocation')
+class UIDPool(ExportModelOperationsMixin("uidpool"), models.Model):
+    group = models.CharField(
+        max_length=20, choices=User.TYPES, unique=True, verbose_name="For type"
+    )
+    base = models.IntegerField(unique=True, verbose_name="Base UID")
+    last = models.IntegerField(blank=True, default=0, verbose_name="Last allocation")
 
     def __str__(self):
-        return 'Pool for %r' % self.group
+        return "Pool for %r" % self.group
 
     class Meta:
-        ordering = ('group',)
-        verbose_name = 'UID Pool'
-        verbose_name_plural = 'UID Pools'
+        ordering = ("group",)
+        verbose_name = "UID Pool"
+        verbose_name_plural = "UID Pools"
 
 
 prologin.utils.django.add_warning_to_django_auth_user_model_name()

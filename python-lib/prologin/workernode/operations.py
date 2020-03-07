@@ -33,44 +33,44 @@ from camisole import isolate
 ioloop = asyncio.get_event_loop()
 
 
-def tar(path, compression='gz'):
+def tar(path, compression="gz"):
     obj = io.BytesIO()
-    with tarfile.open(fileobj=obj, mode='w:' + compression) as tar:
+    with tarfile.open(fileobj=obj, mode="w:" + compression) as tar:
         tar.add(path)
     return obj.getvalue()
 
 
-def untar(content, path, compression='gz'):
+def untar(content, path, compression="gz"):
     obj = io.BytesIO(content)
-    with tarfile.open(fileobj=obj, mode='r:' + compression) as tar:
+    with tarfile.open(fileobj=obj, mode="r:" + compression) as tar:
         tar.extractall(path)
 
 
 def get_output(isolate_result):
-    return '\n'.join((isolate_result.stdout.decode(errors='replace'),
-                      isolate_result.isolate_stdout.decode(errors='replace')))
+    return "\n".join(
+        (
+            isolate_result.stdout.decode(errors="replace"),
+            isolate_result.isolate_stdout.decode(errors="replace"),
+        )
+    )
 
 
 def raise_isolate_error(message, cmd, isolator):
-    output = textwrap.indent(isolator.stdout.decode('utf-8', errors='ignore'),
-                             prefix=' ' * 4)
+    output = textwrap.indent(
+        isolator.stdout.decode("utf-8", errors="ignore"), prefix=" " * 4
+    )
     what = message
     what += "\n"
-    what += "\nCommand: " + ' '.join(cmd)
+    what += "\nCommand: " + " ".join(cmd)
     what += "\nOutput:\n" + output
     if isolator.isolate_stdout:
-        what += ("\nIsolate output:\n" +
-                 isolator.isolate_stdout.decode(errors='replace'))
+        what += "\nIsolate output:\n" + isolator.isolate_stdout.decode(errors="replace")
     if isolator.isolate_stderr:
-        what += ("\nIsolate error:\n" +
-                 isolator.isolate_stderr.decode(errors='replace'))
+        what += "\nIsolate error:\n" + isolator.isolate_stderr.decode(errors="replace")
     raise RuntimeError(what)
 
 
-async def isolate_communicate(cmdline,
-                              limits=None,
-                              allowed_dirs=None,
-                              **kwargs):
+async def isolate_communicate(cmdline, limits=None, allowed_dirs=None, **kwargs):
     isolator = isolate.Isolator(limits, allowed_dirs=allowed_dirs)
     async with isolator:
         await isolator.run(cmdline, **kwargs)
@@ -84,36 +84,33 @@ async def compile_champion(config, ctgz):
     """
     ctgz = b64decode(ctgz)
     code_dir = os.path.abspath(os.path.dirname(__file__))
-    compile_script = os.path.join(code_dir, 'compile-champion.sh')
+    compile_script = os.path.join(code_dir, "compile-champion.sh")
 
-    limits = {
-        'wall-time': config['timeout'].get('compile', 400),
-        'fsize': 50 * 1024
-    }
-    allowed_dirs = ['/tmp:rw', code_dir, '/etc', config['path']['makefiles']]
+    limits = {"wall-time": config["timeout"].get("compile", 400), "fsize": 50 * 1024}
+    allowed_dirs = ["/tmp:rw", code_dir, "/etc", config["path"]["makefiles"]]
 
     isolator = isolate.Isolator(limits, allowed_dirs=allowed_dirs)
     async with isolator:
-        compiled_path = isolator.path / 'champion-compiled.tar.gz'
-        log_path = isolator.path / 'compilation.log'
-        with (isolator.path / 'champion.tgz').open('wb') as f:
+        compiled_path = isolator.path / "champion-compiled.tar.gz"
+        log_path = isolator.path / "compilation.log"
+        with (isolator.path / "champion.tgz").open("wb") as f:
             f.write(ctgz)
 
-        cmd = [compile_script, config['path']['makefiles'], '/box']
+        cmd = [compile_script, config["path"]["makefiles"], "/box"]
         await isolator.run(cmd)
         ret = isolator.isolate_retcode == 0
 
-        compilation_content = b''
+        compilation_content = b""
         if ret:
             try:
-                with compiled_path.open('rb') as f:
+                with compiled_path.open("rb") as f:
                     compilation_content = f.read()
             except FileNotFoundError:
                 ret = False
 
-        log = ''
+        log = ""
         try:
-            with log_path.open('r') as f:
+            with log_path.open("r") as f:
                 log = f.read()
         except FileNotFoundError:
             pass
@@ -122,34 +119,46 @@ async def compile_champion(config, ctgz):
     return ret, b64compiled, log
 
 
-async def spawn_server(config, rep_addr, pub_addr, nb_players, sockets_dir,
-                       map_contents):
+async def spawn_server(
+    config, rep_addr, pub_addr, nb_players, sockets_dir, map_contents
+):
     # Build command
     cmd = [
-        config['path']['stechec_server'],
-        "--rules", config['path']['rules'],
-        "--rep_addr", rep_addr,
-        "--pub_addr", pub_addr,
-        "--nb_clients", str(nb_players),
-        "--time", "3000",
-        "--socket_timeout", "45000",
-        "--dump", "/box/dump.json",
-        "--verbose", "1",
+        config["path"]["stechec_server"],
+        "--rules",
+        config["path"]["rules"],
+        "--rep_addr",
+        rep_addr,
+        "--pub_addr",
+        pub_addr,
+        "--nb_clients",
+        str(nb_players),
+        "--time",
+        "3000",
+        "--socket_timeout",
+        "45000",
+        "--dump",
+        "/box/dump.json",
+        "--verbose",
+        "1",
     ]
 
     if map_contents is not None:
-        f = tempfile.NamedTemporaryFile(mode='w')
+        f = tempfile.NamedTemporaryFile(mode="w")
         f.write(map_contents)
         f.flush()
         os.chmod(f.name, 0o644)
-        cmd += ['--map', f.name]
+        cmd += ["--map", f.name]
 
     # Create the isolator
-    limits = {'wall-time': config['timeout'].get('server', 400)}
+    limits = {"wall-time": config["timeout"].get("server", 400)}
     allowed_dirs = [
-        '/var', '/etc', '/tmp', sockets_dir + ':rw',
-        os.path.dirname(config['path']['stechec_server']),
-        os.path.dirname(config['path']['rules'])
+        "/var",
+        "/etc",
+        "/tmp",
+        sockets_dir + ":rw",
+        os.path.dirname(config["path"]["stechec_server"]),
+        os.path.dirname(config["path"]["rules"]),
     ]
     isolator = isolate.Isolator(limits, allowed_dirs=allowed_dirs)
     async with isolator:
@@ -158,34 +167,37 @@ async def spawn_server(config, rep_addr, pub_addr, nb_players, sockets_dir,
 
         # Retrieve the dump and gz-compress it
         try:
-            dump_path = isolator.path / 'dump.json'
-            with dump_path.open('rb') as dump:
+            dump_path = isolator.path / "dump.json"
+            with dump_path.open("rb") as dump:
                 gzdump = gzip.compress(dump.read())
         except PermissionError:
-            raise_isolate_error("server: dump.json does not have the correct "
-                                "permissions.\n", cmd, isolator)
+            raise_isolate_error(
+                "server: dump.json does not have the correct " "permissions.\n",
+                cmd,
+                isolator,
+            )
         except FileNotFoundError:
-            raise_isolate_error("server: dump.json was not created.\n", cmd,
-                                isolator)
+            raise_isolate_error("server: dump.json was not created.\n", cmd, isolator)
 
     # Retrieve the output
     output = get_output(isolator)
     if isolator.isolate_retcode != 0:
-        raise_isolate_error("server: exited with a non-zero code", cmd,
-                            isolator)
+        raise_isolate_error("server: exited with a non-zero code", cmd, isolator)
     return output, gzdump
 
 
-async def spawn_client(config,
-                       req_addr,
-                       sub_addr,
-                       pl_id,
-                       champion_path,
-                       sockets_dir,
-                       map_contents,
-                       order_id=None):
+async def spawn_client(
+    config,
+    req_addr,
+    sub_addr,
+    pl_id,
+    champion_path,
+    sockets_dir,
+    map_contents,
+    order_id=None,
+):
     # Build environment
-    env = {'CHAMPION_PATH': champion_path + '/', 'HOME': '/tmp'}
+    env = {"CHAMPION_PATH": champion_path + "/", "HOME": "/tmp"}
 
     # Build command
     # yapf: disable
@@ -204,51 +216,55 @@ async def spawn_client(config,
     cmd += ["--client_id", str(order_id)] if order_id is not None else []
 
     if map_contents is not None:
-        f = tempfile.NamedTemporaryFile(mode='w')
+        f = tempfile.NamedTemporaryFile(mode="w")
         f.write(map_contents)
         f.flush()
         os.chmod(f.name, 0o644)
-        cmd += ['--map', f.name]
+        cmd += ["--map", f.name]
 
     # Build resource limits
     limits = {
-        'wall-time': config['isolate'].get('time_limit_secs', 350),
-        'mem': config['isolate'].get('mem_limit_MiB', 500) * 1000,
-        'processes': config['isolate'].get('processes', 50),
-        'fsize': 256,
+        "wall-time": config["isolate"].get("time_limit_secs", 350),
+        "mem": config["isolate"].get("mem_limit_MiB", 500) * 1000,
+        "processes": config["isolate"].get("processes", 50),
+        "fsize": 256,
     }
     allowed_dirs = [
-        '/var', '/etc', '/tmp', sockets_dir + ':rw', champion_path,
-        os.path.dirname(config['path']['stechec_client']),
-        os.path.dirname(config['path']['rules'])
+        "/var",
+        "/etc",
+        "/tmp",
+        sockets_dir + ":rw",
+        champion_path,
+        os.path.dirname(config["path"]["stechec_client"]),
+        os.path.dirname(config["path"]["rules"]),
     ]
 
     # Remove memory limit if Java
-    if os.path.exists(os.path.join(champion_path, 'Prologin.class')):
-        limits.pop('mem')
+    if os.path.exists(os.path.join(champion_path, "Prologin.class")):
+        limits.pop("mem")
 
     # Run the isolated client
-    result = await isolate_communicate(cmd,
-                                       limits,
-                                       env=env,
-                                       allowed_dirs=allowed_dirs,
-                                       merge_outputs=True)
+    result = await isolate_communicate(
+        cmd, limits, env=env, allowed_dirs=allowed_dirs, merge_outputs=True
+    )
     return result.isolate_retcode, get_output(result)
 
 
 async def spawn_match(config, match_id, players, map_contents):
     # Build the domain sockets
-    socket_dir = tempfile.TemporaryDirectory(prefix=f'workernode-{match_id}-')
+    socket_dir = tempfile.TemporaryDirectory(prefix=f"workernode-{match_id}-")
     os.chmod(socket_dir.name, 0o777)
-    f_reqrep = socket_dir.name + '/' + 'reqrep'
-    f_pubsub = socket_dir.name + '/' + 'pubsub'
-    s_reqrep = 'ipc://' + f_reqrep
-    s_pubsub = 'ipc://' + f_pubsub
+    f_reqrep = socket_dir.name + "/" + "reqrep"
+    f_pubsub = socket_dir.name + "/" + "pubsub"
+    s_reqrep = "ipc://" + f_reqrep
+    s_pubsub = "ipc://" + f_pubsub
 
     # Server task
     task_server = asyncio.Task(
-        spawn_server(config, s_reqrep, s_pubsub, len(players), socket_dir.name,
-                     map_contents))
+        spawn_server(
+            config, s_reqrep, s_pubsub, len(players), socket_dir.name, map_contents
+        )
+    )
     await asyncio.sleep(0.1)  # Let the server start
 
     # Retry every seconds for 5 seconds
@@ -270,14 +286,17 @@ async def spawn_match(config, match_id, players, map_contents):
         champion_dirs.append(cdir)
         untar(ctgz, cdir.name)
         tasks_players[pl_id] = asyncio.Task(
-            spawn_client(config,
-                         s_reqrep,
-                         s_pubsub,
-                         pl_id,
-                         cdir.name,
-                         socket_dir.name,
-                         map_contents,
-                         order_id=oid))
+            spawn_client(
+                config,
+                s_reqrep,
+                s_pubsub,
+                pl_id,
+                cdir.name,
+                socket_dir.name,
+                map_contents,
+                order_id=oid,
+            )
+        )
 
     # Wait for the match to complete
     await asyncio.wait([task_server] + list(tasks_players.values()))
@@ -286,15 +305,13 @@ async def spawn_match(config, match_id, players, map_contents):
     server_out, dump = task_server.result()
     dump = b64encode(dump).decode()
     players_info = {
-        pl_id: (
-            players[pl_id][0],  # champion_id
-            *t.result())  # retcode, output
+        pl_id: (players[pl_id][0], *t.result())  # champion_id  # retcode, output
         for pl_id, t in tasks_players.items()
     }
 
     # Extract the match result from the server stdout
     # stechec2 rules can output non-dict data, discard it
-    server_yaml = server_out[server_out.find('---'):]
+    server_yaml = server_out[server_out.find("---") :]
     server_result = yaml.safe_load_all(server_yaml)
     server_result = [r for r in server_result if isinstance(r, dict)]
 

@@ -19,33 +19,33 @@ from prologin.mdb import models
 
 
 class IPPoolAdmin(admin.ModelAdmin):
-    list_display = ('mtype', 'network', 'last')
-    radio_fields = {'mtype': admin.HORIZONTAL}
+    list_display = ("mtype", "network", "last")
+    radio_fields = {"mtype": admin.HORIZONTAL}
 
 
 class MachineAdmin(admin.ModelAdmin):
-    list_display = ('hostname', 'aliases', 'ip', 'mtype', 'room')
-    list_filter = ('mtype', 'room')
+    list_display = ("hostname", "aliases", "ip", "mtype", "room")
+    list_filter = ("mtype", "room")
     list_per_page = 250
-    radio_fields = {'mtype': admin.HORIZONTAL, 'room': admin.HORIZONTAL}
-    search_fields = ('hostname', 'aliases', 'ip', 'mac')
+    radio_fields = {"mtype": admin.HORIZONTAL, "room": admin.HORIZONTAL}
+    search_fields = ("hostname", "aliases", "ip", "mac")
 
     def get_readonly_fields(self, request, obj=None):
         if obj:
-            return ['ip', 'mac', 'hostname']
+            return ["ip", "mac", "hostname"]
         else:
-            return ['ip']
+            return ["ip"]
 
 
 class SwitchAdmin(admin.ModelAdmin):
-    list_display = ('name', 'room', 'rfs', 'hfs')
-    list_filter = ('room',)
-    search_fields = ('name', 'rfs', 'hfs', 'room')
+    list_display = ("name", "room", "rfs", "hfs")
+    list_filter = ("room",)
+    search_fields = ("name", "rfs", "hfs", "room")
 
 
 class VolatileSettingAdmin(admin.ModelAdmin):
-    list_display = ('key', 'value_bool', 'value_str', 'value_int')
-    search_fields = ('key', 'value_str')
+    list_display = ("key", "value_bool", "value_str", "value_int")
+    search_fields = ("key", "value_str")
 
 
 admin.site.register(models.IPPool, IPPoolAdmin)

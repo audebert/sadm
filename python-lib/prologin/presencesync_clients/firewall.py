@@ -11,7 +11,7 @@ import prologin.udb.client
 import prologin.udbsync.client
 import subprocess
 
-CFG = prologin.config.load('presencesync_firewall')
+CFG = prologin.config.load("presencesync_firewall")
 
 
 mdb_machines = {}
@@ -24,40 +24,40 @@ def update_firewall():
     if not mdb_machines or not udb_users:
         return
 
-    logging.info('Updating firewall')
+    logging.info("Updating firewall")
 
-    allowed_groups = CFG['allowed_groups']
+    allowed_groups = CFG["allowed_groups"]
 
     # Flush temporary set
-    subprocess.call('ipset flush tmp-allowed-internet-access', shell=True)
+    subprocess.call("ipset flush tmp-allowed-internet-access", shell=True)
 
     # Find allowed hostnames
     allowed_hostnames = set()
     for entity in presence_data.values():
-        if udb_users[entity['login']]['group'] in allowed_groups:
+        if udb_users[entity["login"]]["group"] in allowed_groups:
             # Add user to temporary set
-            allowed_hostnames.add(entity['hostname'])
+            allowed_hostnames.add(entity["hostname"])
 
     # Translate hostnames to ip
     allowed_ips = set()
     for hostname in allowed_hostnames:
         for machine in mdb_machines.values():
-            if hostname == machine['hostname']:
-                allowed_ips.add(machine['ip'])
+            if hostname == machine["hostname"]:
+                allowed_ips.add(machine["ip"])
                 break  # IP found
 
     # Add organizers machines
     for machine in mdb_machines.values():
-        if machine['mtype'] == 'orga':
-            allowed_ips.add(machine['ip'])
+        if machine["mtype"] == "orga":
+            allowed_ips.add(machine["ip"])
 
     for ip in allowed_ips:
-        subprocess.call('ipset add tmp-allowed-internet-access %s' % ip,
-                        shell=True)
+        subprocess.call("ipset add tmp-allowed-internet-access %s" % ip, shell=True)
 
     # Swap sets, supposed atomic operation
-    subprocess.call('ipset swap tmp-allowed-internet-access '
-                    'allowed-internet-access', shell=True)
+    subprocess.call(
+        "ipset swap tmp-allowed-internet-access " "allowed-internet-access", shell=True
+    )
 
 
 async def poll_all():
@@ -74,6 +74,7 @@ async def poll_all():
             dict_to_update.clear()
             dict_to_update.update(values)
             loop.call_soon_threadsafe(update_firewall)
+
         tasks.append(loop.run_in_executor(None, client.poll_updates, cb))
 
     add_task(mdbsync_client, mdb_machines)
@@ -83,6 +84,6 @@ async def poll_all():
     await asyncio.wait(tasks)
 
 
-if __name__ == '__main__':
-    prologin.log.setup_logging('presencesync_firewall')
+if __name__ == "__main__":
+    prologin.log.setup_logging("presencesync_firewall")
     asyncio.get_event_loop().run_until_complete(poll_all())

@@ -28,55 +28,49 @@ import shutil
 import subprocess
 import sys
 
-User = collections.namedtuple('User',
-    'login password uid gid name home shell'
-)
-Group = collections.namedtuple('Group', 'name password gid members')
+User = collections.namedtuple("User", "login password uid gid name home shell")
+Group = collections.namedtuple("Group", "name password gid members")
 
 USER_PATTERN = re.compile(
-    '(?P<login>[-a-z_0-9]+)'
-    ':(?P<password>[^:]*)'
-    ':(?P<uid>\d+)'
-    ':(?P<gid>\d+)'
-    ':(?P<name>.*)'
-    ':(?P<home>[^:]+)'
-    ':(?P<shell>[^:]+)$'
+    "(?P<login>[-a-z_0-9]+)"
+    ":(?P<password>[^:]*)"
+    ":(?P<uid>\d+)"
+    ":(?P<gid>\d+)"
+    ":(?P<name>.*)"
+    ":(?P<home>[^:]+)"
+    ":(?P<shell>[^:]+)$"
 )
 
-SHADOW_PATTERN = re.compile(
-    '(?P<login>[-a-z_0-9]+):(?P<remainder>.*)$'
-)
+SHADOW_PATTERN = re.compile("(?P<login>[-a-z_0-9]+):(?P<remainder>.*)$")
 
 GROUP_PATTERN = re.compile(
-    '(?P<name>[-a-z_0-9]+)'
-    ':(?P<password>[^:]*)'
-    ':(?P<gid>\d+)'
-    ':(?P<members>[-a-z_0-9,]*)$'
+    "(?P<name>[-a-z_0-9]+)"
+    ":(?P<password>[^:]*)"
+    ":(?P<gid>\d+)"
+    ":(?P<members>[-a-z_0-9,]*)$"
 )
 
 PROLOGIN_GROUPS = {
-    'wheel': 10,
-    'user': 10000,
-    'orga': 10001,
+    "wheel": 10,
+    "user": 10000,
+    "orga": 10001,
 }
-PASSWD_PERMS    = 0o644
-SHADOW_PERMS    = 0o600
-GROUP_PERMS     = 0o644
+PASSWD_PERMS = 0o644
+SHADOW_PERMS = 0o600
+GROUP_PERMS = 0o644
 
-HOME_DIR = '/home/{}'
+HOME_DIR = "/home/{}"
 
 
 class BufferFile:
     """Write to `filepath` using a temporary file as a buffer, so that the
     destination file is changed instantly.
     """
+
     def __init__(self, filepath, perms):
         self.filepath = filepath
-        self.temp_path = os.path.join(
-            '/tmp',
-            filepath.replace(os.path.sep, '-')
-        )
-        self.f = open(self.temp_path, 'w')
+        self.temp_path = os.path.join("/tmp", filepath.replace(os.path.sep, "-"))
+        self.f = open(self.temp_path, "w")
         os.chmod(self.temp_path, perms)
 
     def __enter__(self):
@@ -86,69 +80,71 @@ class BufferFile:
         self.f.close()
         shutil.move(self.temp_path, self.filepath)
 
+
 def callback(root_path, users, updates_metadata):
-    logging.info('New updates: %r', updates_metadata)
+    logging.info("New updates: %r", updates_metadata)
 
     passwd_users = {}
     shadow_passwords = {}
     groups = {}
 
     # First, parse /etc/passwd to get users that are not handled by Prologin.
-    with open(os.path.join(root_path, 'etc/passwd'), 'r') as f:
+    with open(os.path.join(root_path, "etc/passwd"), "r") as f:
         for line in f:
-            line = line.rstrip('\n')
+            line = line.rstrip("\n")
             m = USER_PATTERN.match(line)
             if m:
                 user = User(
-                    m.group('login'),
-                    m.group('password'),
-                    int(m.group('uid')),
-                    int(m.group('gid')),
-                    m.group('name'),
-                    m.group('home'),
-                    m.group('shell'),
+                    m.group("login"),
+                    m.group("password"),
+                    int(m.group("uid")),
+                    int(m.group("gid")),
+                    m.group("name"),
+                    m.group("home"),
+                    m.group("shell"),
                 )
                 if not prologin.presenced.client.is_prologin_uid(user.uid):
                     passwd_users[user.login] = user
             else:
-                logging.error('Unparsable /etc/passwd line: %r', line)
-                logging.info('Stopping generation')
+                logging.error("Unparsable /etc/passwd line: %r", line)
+                logging.info("Stopping generation")
                 return
 
     # Then, parse /etc/shadow to get passwords.
-    with open(os.path.join(root_path, 'etc/shadow'), 'r') as f:
+    with open(os.path.join(root_path, "etc/shadow"), "r") as f:
         for line in f:
-            line = line.rstrip('\n')
+            line = line.rstrip("\n")
             m = SHADOW_PATTERN.match(line)
             if m:
-                login = m.group('login')
+                login = m.group("login")
                 if login not in passwd_users:
                     continue
-                shadow_passwords[login] = m.group('remainder')
+                shadow_passwords[login] = m.group("remainder")
             else:
-                logging.error('Unparsable /etc/passwd line: %r', line)
-                logging.info('Stopping generation')
+                logging.error("Unparsable /etc/passwd line: %r", line)
+                logging.info("Stopping generation")
                 return
 
     # Parse /etc/group to get... groups!
-    with open(os.path.join(root_path, 'etc/group'), 'r') as f:
+    with open(os.path.join(root_path, "etc/group"), "r") as f:
         for line in f:
-            line = line.rstrip('\n')
+            line = line.rstrip("\n")
             m = GROUP_PATTERN.match(line)
             if m:
-                name = m.group('name')
+                name = m.group("name")
                 groups[name] = Group(
-                    name, m.group('password'),
-                    int(m.group('gid')),
+                    name,
+                    m.group("password"),
+                    int(m.group("gid")),
                     set(
                         member
-                        for member in m.group('members').split(',')
+                        for member in m.group("members").split(",")
                         if member and member in passwd_users
-                    )
+                    ),
                 )
             else:
-                logging.error('Unparsable /etc/group line: %r', line)
-                logging.info('Stopping generation')
+                logging.error("Unparsable /etc/group line: %r", line)
+                logging.info("Stopping generation")
                 return
 
     # Reset prologin groups.
@@ -158,24 +154,25 @@ def callback(root_path, users, updates_metadata):
         except KeyError:
             # If it does not exist, create it.
             # TODO: check that there is no existing group with the same GID.
-            groups[name] = Group(name, 'x', gid, set())
+            groups[name] = Group(name, "x", gid, set())
 
     # Complete with users handled by Prologin.
-    days_since_epoch = (
-        datetime.datetime.today() - datetime.datetime(1970, 1, 1)
-    ).days
+    days_since_epoch = (datetime.datetime.today() - datetime.datetime(1970, 1, 1)).days
     for login, udb_user in users.items():
         utype_to_groups = {
-            'user': ['user'],
-            'orga': ['orga', 'user'],
-            'root': ['wheel', 'orga', 'user'],
+            "user": ["user"],
+            "orga": ["orga", "user"],
+            "root": ["wheel", "orga", "user"],
         }
-        user_groups = utype_to_groups[udb_user['group']]
+        user_groups = utype_to_groups[udb_user["group"]]
         user = User(
-            udb_user['login'], 'x',
-            udb_user['uid'], PROLOGIN_GROUPS[user_groups[0]],
-            udb_user['firstname'] + ' ' + udb_user['lastname'],
-            HOME_DIR.format(udb_user['login']), udb_user['shell'],
+            udb_user["login"],
+            "x",
+            udb_user["uid"],
+            PROLOGIN_GROUPS[user_groups[0]],
+            udb_user["firstname"] + " " + udb_user["lastname"],
+            HOME_DIR.format(udb_user["login"]),
+            udb_user["shell"],
         )
         passwd_users[login] = user
 
@@ -187,27 +184,32 @@ def callback(root_path, users, updates_metadata):
         # - number of days the password is valid (tons of days)
         # - number of days before password expiration for warnings (0)
         # - number of days after password expiration for account disabling (0)
-        password = subprocess.check_output(
-            ['openssl', 'passwd', '-1', udb_user['password']]
-        ).decode('ascii').strip()
-        shadow_passwords[login] = '{}:{}:0:99999:7:0::'.format(
+        password = (
+            subprocess.check_output(["openssl", "passwd", "-1", udb_user["password"]])
+            .decode("ascii")
+            .strip()
+        )
+        shadow_passwords[login] = "{}:{}:0:99999:7:0::".format(
             password, days_since_epoch
         )
 
         for name in user_groups:
-            groups[name].members.add(udb_user['login'])
+            groups[name].members.add(udb_user["login"])
 
     userless_shadows = set(shadow_passwords) - set(passwd_users)
     shadowless_users = set(passwd_users) - set(shadow_passwords)
     if userless_shadows:
-        logging.error('Some shadow passwords have no passwd users: %s',
-                      ', '.join(userless_shadows))
-        logging.info('Stopping generation')
+        logging.error(
+            "Some shadow passwords have no passwd users: %s",
+            ", ".join(userless_shadows),
+        )
+        logging.info("Stopping generation")
         return
     if shadowless_users:
-        logging.error('Some passwd users have no shadow password: %s',
-                      ', '.join(shadowless_users))
-        logging.info('Stopping generation')
+        logging.error(
+            "Some passwd users have no shadow password: %s", ", ".join(shadowless_users)
+        )
+        logging.info("Stopping generation")
         return
 
     # TODO: moar consistency checks!
@@ -219,42 +221,41 @@ def callback(root_path, users, updates_metadata):
     sorted_groups.sort(key=lambda g: g.gid)
 
     # Finally, output updated files.
-    with BufferFile(os.path.join(root_path, 'etc/passwd'), PASSWD_PERMS) as f:
+    with BufferFile(os.path.join(root_path, "etc/passwd"), PASSWD_PERMS) as f:
         for user in sorted_users:
             print(
-                '{0.login}:{0.password}'
-                ':{0.uid}:{0.gid}'
-                ':{0.name}'
-                ':{0.home}:{0.shell}'.format(user),
-                file=f
+                "{0.login}:{0.password}"
+                ":{0.uid}:{0.gid}"
+                ":{0.name}"
+                ":{0.home}:{0.shell}".format(user),
+                file=f,
             )
 
-    with BufferFile(os.path.join(root_path, 'etc/shadow'), SHADOW_PERMS) as f:
+    with BufferFile(os.path.join(root_path, "etc/shadow"), SHADOW_PERMS) as f:
         for user in sorted_users:
             try:
                 shadow = shadow_passwords[user.login]
             except KeyError:
                 pass
             else:
-                print('{}:{}'.format(user.login, shadow), file=f)
+                print("{}:{}".format(user.login, shadow), file=f)
 
-    with BufferFile(os.path.join(root_path, 'etc/group'), GROUP_PERMS) as f:
+    with BufferFile(os.path.join(root_path, "etc/group"), GROUP_PERMS) as f:
         for group in sorted_groups:
             print(
-                '{0.name}:{0.password}:{0.gid}:{1}'.format(
-                    group, ','.join(sorted(
-                        group.members, key=lambda m: passwd_users[m].uid
-                    ))
+                "{0.name}:{0.password}:{0.gid}:{1}".format(
+                    group,
+                    ",".join(sorted(group.members, key=lambda m: passwd_users[m].uid)),
                 ),
-                file=f
+                file=f,
             )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     if len(sys.argv) != 2:
-        root_path = '/'
+        root_path = "/"
     else:
         root_path = sys.argv[1]
-    prologin.log.setup_logging('udbsync_passwd({})'.format(root_path))
+    prologin.log.setup_logging("udbsync_passwd({})".format(root_path))
     callback = functools.partial(callback, root_path)
     prologin.udbsync.client.connect().poll_updates(callback)

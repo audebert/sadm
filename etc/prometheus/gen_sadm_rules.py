@@ -27,36 +27,37 @@ def main():
             "presencesync_firewall.service",
         ],
     }
-    systemd_units_running.update({
-        f"rhfs{rhfs}{rhfs + 1}.prolo": [
-            "udbsync_passwd.service",
-            "udbsync_passwd_nfsroot.service",
-            "udbsync_rootssh.service",
-            "rpcbind.service",
-            "nfs-server.service",
-            "rootssh.path",
-        ]
-        for rhfs in range(0, 9, 2)
-    })
+    systemd_units_running.update(
+        {
+            f"rhfs{rhfs}{rhfs + 1}.prolo": [
+                "udbsync_passwd.service",
+                "udbsync_passwd_nfsroot.service",
+                "udbsync_rootssh.service",
+                "rpcbind.service",
+                "nfs-server.service",
+                "rootssh.path",
+            ]
+            for rhfs in range(0, 9, 2)
+        }
+    )
 
     # Create file structure
-    root = {'groups': []}
-    groups = root['groups']
-    group = {'name': 'sadm.rules', 'rules': []}
+    root = {"groups": []}
+    groups = root["groups"]
+    group = {"name": "sadm.rules", "rules": []}
     groups.append(group)
-    rules = group['rules']
+    rules = group["rules"]
 
     # Add alerts
     for instance, services in systemd_units_running.items():
         for service in services:
             rule = {
-                'alert': f'{instance}_{service}_NotActive',
-                'expr':
-                f'node_systemd_unit_state{{instance="{instance}", name="{service}", state="active"}} == 0',
-                'for': '30s',
-                'annotations': {
-                    'summary': f'{service} is not active on {instance}',
-                    'description': f'ssh {instance} journalctl -eu {service}',
+                "alert": f"{instance}_{service}_NotActive",
+                "expr": f'node_systemd_unit_state{{instance="{instance}", name="{service}", state="active"}} == 0',
+                "for": "30s",
+                "annotations": {
+                    "summary": f"{service} is not active on {instance}",
+                    "description": f"ssh {instance} journalctl -eu {service}",
                 },
             }
             rules.append(rule)

@@ -9,7 +9,7 @@ def initial_data(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('stechec', '0001_create_tables'),
+        ("stechec", "0001_create_tables"),
     ]
 
     operations = [

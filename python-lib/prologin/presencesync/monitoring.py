@@ -19,9 +19,7 @@
 from prometheus_client import start_http_server, Counter
 
 presencesync_login_failed = Counter(
-    'presencesync_login_failed',
-    'Count of failed login',
-    labelnames=('reason', 'user')
+    "presencesync_login_failed", "Count of failed login", labelnames=("reason", "user")
 )
 
 

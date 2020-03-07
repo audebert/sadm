@@ -25,23 +25,34 @@ import prologin.log
 from .worker import WorkerNode
 from .monitoring import monitoring_start
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = optparse.OptionParser()
-    parser.add_option('-l', '--local-logging', action='store_true',
-                      dest='local_logging', default=False,
-                      help='Activate logging to stdout.')
-    parser.add_option('-v', '--verbose', action='store_true',
-                      dest='verbose', default=False,
-                      help='Verbose mode.')
+    parser.add_option(
+        "-l",
+        "--local-logging",
+        action="store_true",
+        dest="local_logging",
+        default=False,
+        help="Activate logging to stdout.",
+    )
+    parser.add_option(
+        "-v",
+        "--verbose",
+        action="store_true",
+        dest="verbose",
+        default=False,
+        help="Verbose mode.",
+    )
     options, args = parser.parse_args()
 
-    prologin.log.setup_logging('workernode', verbose=options.verbose,
-                               local=options.local_logging)
-    logging.getLogger('asyncio').setLevel(logging.WARNING)
+    prologin.log.setup_logging(
+        "workernode", verbose=options.verbose, local=options.local_logging
+    )
+    logging.getLogger("asyncio").setLevel(logging.WARNING)
 
-    config = prologin.config.load('workernode')
+    config = prologin.config.load("workernode")
 
-    s = WorkerNode(app_name='workernode', config=config)
+    s = WorkerNode(app_name="workernode", config=config)
 
     monitoring_start()
 

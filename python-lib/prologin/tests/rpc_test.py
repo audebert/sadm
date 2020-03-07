@@ -24,7 +24,7 @@ class RPCServer(prologin.rpc.server.BaseRPCApp):
 
     @prologin.rpc.remote_method
     async def return_string(self):
-        return 'prologin'
+        return "prologin"
 
     @prologin.rpc.remote_method
     async def return_list(self):
@@ -36,7 +36,7 @@ class RPCServer(prologin.rpc.server.BaseRPCApp):
 
     @prologin.rpc.remote_method
     async def return_args_kwargs(self, arg1, arg2, *, kw1=None, kw2=None):
-        return [[arg1, arg2], {'kw1': kw1, 'kw2': kw2}]
+        return [[arg1, arg2], {"kw1": kw1, "kw2": kw2}]
 
     @prologin.rpc.remote_method
     async def raises_valueerror(self):
@@ -46,20 +46,20 @@ class RPCServer(prologin.rpc.server.BaseRPCApp):
 
     @prologin.rpc.remote_method(auth_required=False)
     async def public_hello(self):
-        return 'hello'
+        return "hello"
 
 
 class RPCServerInstance:
     def __init__(self, *, port, secret=None):
         self.port = port
         self.secret = secret
-        self.app = RPCServer('test-rpc', secret=self.secret)
+        self.app = RPCServer("test-rpc", secret=self.secret)
         self.runner = None
 
     async def start(self):
         self.runner = aiohttp.web.AppRunner(self.app.app)
         await self.runner.setup()
-        site = aiohttp.web.TCPSite(self.runner, '127.0.0.1', self.port)
+        site = aiohttp.web.TCPSite(self.runner, "127.0.0.1", self.port)
         await site.start()
 
     async def stop(self):
@@ -69,9 +69,8 @@ class RPCServerInstance:
 @pytest.fixture
 async def rpc_server(request, event_loop):
     port = aiohttp.test_utils.unused_port()
-    url = 'http://127.0.0.1:{}'.format(port)
-    secret = (request.function.secret if hasattr(request.function, 'secret')
-              else None)
+    url = "http://127.0.0.1:{}".format(port)
+    secret = request.function.secret if hasattr(request.function, "secret") else None
     server = RPCServerInstance(port=port, secret=secret)
     await server.start()
     yield url
@@ -82,6 +81,7 @@ def with_secret(secret):
     def wrapper(f):
         f.secret = secret
         return f
+
     return wrapper
 
 
@@ -97,7 +97,7 @@ async def test_number(rpc_client):
 
 @pytest.mark.asyncio
 async def test_string(rpc_client):
-    assert (await rpc_client.return_string()) == 'prologin'
+    assert (await rpc_client.return_string()) == "prologin"
 
 
 @pytest.mark.asyncio
@@ -107,33 +107,33 @@ async def test_list(rpc_client):
 
 @pytest.mark.asyncio
 async def test_nested(rpc_client):
-    obj = {'test': 72, 'list': [1, 42, 33, {'object': '3'}]}
+    obj = {"test": 72, "list": [1, 42, 33, {"object": "3"}]}
     assert (await rpc_client.return_input(obj)) == obj
 
 
 @pytest.mark.asyncio
 async def test_args_kwargs(rpc_client):
-    res = rpc_client.return_args_kwargs(1, 'c', kw1='a', kw2=None)
-    assert (await res) == [[1, 'c'], {'kw1': 'a', 'kw2': None}]
+    res = rpc_client.return_args_kwargs(1, "c", kw1="a", kw2=None)
+    assert (await res) == [[1, "c"], {"kw1": "a", "kw2": None}]
 
 
 @pytest.mark.asyncio
 async def test_missing_method(rpc_client):
     with pytest.raises(prologin.rpc.client.RemoteError) as e:
         await rpc_client.missing_method()
-    assert e.value.type == 'MethodError'
+    assert e.value.type == "MethodError"
 
 
 @pytest.mark.asyncio
 async def test_raises_valueerror(rpc_client):
     with pytest.raises(prologin.rpc.client.RemoteError) as e:
         await rpc_client.raises_valueerror()
-    assert e.value.type == 'ValueError'
-    assert e.value.message == 'Monde de merde.'
+    assert e.value.type == "ValueError"
+    assert e.value.message == "Monde de merde."
 
 
-GOOD_SECRET = b'secret42'
-BAD_SECRET = b'secret51'
+GOOD_SECRET = b"secret42"
+BAD_SECRET = b"secret51"
 
 
 @pytest.mark.asyncio
@@ -149,7 +149,7 @@ async def test_bad_secret(rpc_server):
     rpc_client = prologin.rpc.client.Client(rpc_server, secret=BAD_SECRET)
     with pytest.raises(prologin.rpc.client.RemoteError) as e:
         await rpc_client.return_number()
-    assert e.value.type == 'BadToken'
+    assert e.value.type == "BadToken"
 
 
 @pytest.mark.asyncio
@@ -158,28 +158,28 @@ async def test_missing_secret(rpc_server):
     rpc_client = prologin.rpc.client.Client(rpc_server)
     with pytest.raises(prologin.rpc.client.RemoteError) as e:
         await rpc_client.return_number()
-    assert e.value.type == 'MissingToken'
+    assert e.value.type == "MissingToken"
 
 
 @pytest.mark.asyncio
 @with_secret(GOOD_SECRET)
 async def test_public_good_secret(rpc_server):
     rpc_client = prologin.rpc.client.Client(rpc_server, secret=GOOD_SECRET)
-    assert (await rpc_client.public_hello()) == 'hello'
+    assert (await rpc_client.public_hello()) == "hello"
 
 
 @pytest.mark.asyncio
 @with_secret(GOOD_SECRET)
 async def test_public_bad_secret(rpc_server):
     rpc_client = prologin.rpc.client.Client(rpc_server, secret=BAD_SECRET)
-    assert (await rpc_client.public_hello()) == 'hello'
+    assert (await rpc_client.public_hello()) == "hello"
 
 
 @pytest.mark.asyncio
 @with_secret(GOOD_SECRET)
 async def test_public_missing_secret(rpc_server):
     rpc_client = prologin.rpc.client.Client(rpc_server)
-    assert (await rpc_client.public_hello()) == 'hello'
+    assert (await rpc_client.public_hello()) == "hello"
 
 
 # TODO: convert this to pytest

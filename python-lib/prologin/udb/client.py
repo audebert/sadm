@@ -20,16 +20,17 @@ import logging
 import prologin.config
 import prologin.rpc.client
 
-CFG = prologin.config.load('udb-client')
+CFG = prologin.config.load("udb-client")
 
 
 def connect(auth=False):
     if auth:
-        secret = prologin.config.load('udb-client-auth')['shared_secret']
+        secret = prologin.config.load("udb-client-auth")["shared_secret"]
         secret = secret.encode()
     else:
         secret = None
-    url = CFG['url']
-    logging.info('Creating UDB connection object: url=%s, has_secret=%s',
-                 url, secret is not None)
-    return prologin.rpc.client.SyncClient(CFG['url'], secret=secret)
+    url = CFG["url"]
+    logging.info(
+        "Creating UDB connection object: url=%s, has_secret=%s", url, secret is not None
+    )
+    return prologin.rpc.client.SyncClient(CFG["url"], secret=secret)

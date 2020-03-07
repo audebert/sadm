@@ -9,7 +9,7 @@ def initial_data(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('udb', '0001_initial'),
+        ("udb", "0001_initial"),
     ]
 
     operations = [

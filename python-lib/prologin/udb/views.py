@@ -21,16 +21,16 @@ import prologin.udb.receivers  # To connect our receivers
 from prologin.udb.models import User
 from prologin.utils.django import check_filter_fields
 
-CFG = prologin.config.load('udb-client-auth')
+CFG = prologin.config.load("udb-client-auth")
 
 
 class UDBServer(prologin.rpc.server.BaseRPCApp):
     def __init__(self, *args, **kwargs):
-        secret = CFG['shared_secret'].encode()
+        secret = CFG["shared_secret"].encode()
         super().__init__(*args, secret=secret, **kwargs)
 
     def get_users(self, **kwargs):
-        fields = {'login', 'uid', 'group', 'shell', 'ssh_key', 'id'}
+        fields = {"login", "uid", "group", "shell", "ssh_key", "id"}
         check_filter_fields(fields, kwargs)
         users = User.objects.filter(**kwargs)
         users = [m.to_dict() for m in users]
@@ -40,7 +40,7 @@ class UDBServer(prologin.rpc.server.BaseRPCApp):
     async def query(self, **kwargs):
         users = self.get_users(**kwargs)
         for u in users:
-            del u['password']
+            del u["password"]
         return users
 
     @prologin.rpc.remote_method

@@ -21,9 +21,9 @@ from django.urls import include, path
 import prologin.homepage.views
 
 urlpatterns = [
-    path('', prologin.homepage.views.HomeView.as_view(), name='home'),
-    path('admin/', admin.site.urls),
-    path('', include('django_prometheus.urls')),
+    path("", prologin.homepage.views.HomeView.as_view(), name="home"),
+    path("admin/", admin.site.urls),
+    path("", include("django_prometheus.urls")),
 ]
 
 urlpatterns += staticfiles_urlpatterns()

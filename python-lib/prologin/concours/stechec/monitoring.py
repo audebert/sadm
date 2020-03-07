@@ -20,19 +20,23 @@ from prometheus_client import Gauge
 from .models import Champion, Match
 
 concours_champion_status_count = Gauge(
-    'concours_champion_status_count',
-    'Count of champion by status',
-    labelnames=('status',))
+    "concours_champion_status_count",
+    "Count of champion by status",
+    labelnames=("status",),
+)
 
-for status in ('new', 'pending', 'ready', 'error'):
+for status in ("new", "pending", "ready", "error"):
     concours_champion_status_count.labels(status=status).set_function(
-        lambda status=status: len(Champion.objects.filter(status=status)))
+        lambda status=status: len(Champion.objects.filter(status=status))
+    )
 
 concours_match_status_count = Gauge(
-    'concours_match_status_count',
-    'Count of matches in by status',
-    labelnames=('status',))
+    "concours_match_status_count",
+    "Count of matches in by status",
+    labelnames=("status",),
+)
 
-for status in ('creating', 'new', 'pending', 'done'):
+for status in ("creating", "new", "pending", "done"):
     concours_match_status_count.labels(status=status).set_function(
-        lambda status=status: len(Match.objects.filter(status=status)))
+        lambda status=status: len(Match.objects.filter(status=status))
+    )

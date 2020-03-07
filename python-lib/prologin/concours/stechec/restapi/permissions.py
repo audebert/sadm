@@ -2,7 +2,7 @@ from rest_framework import permissions, throttling
 
 
 class CreateMatchUserThrottle(throttling.UserRateThrottle):
-    rate = '4/min'
+    rate = "4/min"
 
 
 class IsOwnerOrReadOnly(permissions.IsAuthenticated):
@@ -10,7 +10,8 @@ class IsOwnerOrReadOnly(permissions.IsAuthenticated):
     Object-level permission to only allow staff or owners of an object to edit it.
     Allow read-only access for everybody (authenticated).
     """
-    field = 'author'
+
+    field = "author"
 
     def has_object_permission(self, request, view, obj):
         # Read permissions are allowed to any request,
@@ -30,4 +31,6 @@ def IsOwnerUsing(field):  # noqa
     Exmample usage:
         permission_classes = [IsOwnerUsing('owner')]
     """
-    return type('IsOwnerUsing%s' % field.capitalize(), (IsOwnerOrReadOnly,), {'field': field})
+    return type(
+        "IsOwnerUsing%s" % field.capitalize(), (IsOwnerOrReadOnly,), {"field": field}
+    )

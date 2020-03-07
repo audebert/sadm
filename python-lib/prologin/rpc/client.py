@@ -22,16 +22,19 @@ from urllib.parse import urljoin
 
 class BaseError(Exception):
     """Base class for all exceptions here."""
+
     pass
 
 
 class InternalError(BaseError):
     """Raised when there is a protocol failure somewhere."""
+
     pass
 
 
 class RemoteError(BaseError):
     """Raised when the remote procedure raised an error."""
+
     def __init__(self, type, message):
         self.type = type
         self.message = message
@@ -47,7 +50,7 @@ class Client:
 
     def _handle_exception(self, data):
         """Handle an exception from a remote call."""
-        raise RemoteError(data['exn_type'], data['exn_message'])
+        raise RemoteError(data["exn_type"], data["exn_message"])
 
     async def _call_method(self, method, args, kwargs):
         """Call the remote `method` passing `args` and `kwargs` to it.
@@ -61,62 +64,63 @@ class Client:
 
         # Serialize arguments and send the request...
         arguments = {
-            'args': args,
-            'kwargs': kwargs,
+            "args": args,
+            "kwargs": kwargs,
         }
 
         # Generate the timeauth token
         if self.secret:
-            arguments['hmac'] = prologin.timeauth.generate_token(self.secret,
-                                                                 method)
+            arguments["hmac"] = prologin.timeauth.generate_token(self.secret, method)
         try:
             req_data = json.dumps(arguments)
         except (TypeError, ValueError):
-            raise ValueError('non serializable argument types')
+            raise ValueError("non serializable argument types")
 
-        url = urljoin(self.base_url, 'call/{}'.format(method))
-        data = '{}\n'.format(req_data).encode('ascii')
+        url = urljoin(self.base_url, "call/{}".format(method))
+        data = "{}\n".format(req_data).encode("ascii")
 
         # FIXME(seirl): use a global session and async with?
         # This would require to have client as a context manager :/
         async with aiohttp.ClientSession() as session:
             async with session.post(url, data=data) as req:
-                return (await self._request_work(req))
+                return await self._request_work(req)
 
     async def _request_work(self, req):
-        if req.headers['Content-Type'] == 'application/json':
+        if req.headers["Content-Type"] == "application/json":
             # The remote call returned: we can have a result or an exception.
             result = await req.json()
 
-            if result['type'] == 'result':
+            if result["type"] == "result":
                 # There is nothing more to do than returning the actual
                 # result.
-                return result['data']
+                return result["data"]
 
-            elif result['type'] == 'exception':
+            elif result["type"] == "exception":
                 # Just raise a RemoteError with interesting data.
                 self._handle_exception(result)
 
             else:
                 # There should not be any other possibility.
-                raise InternalError(
-                    'Invalid result type: {}'.format(result['type'])
-                )
+                raise InternalError("Invalid result type: {}".format(result["type"]))
         else:
             # Something went wrong before reaching the remote procedure...
             raise InternalError(req.text)
 
     def __getattr__(self, method):
         """Return a callable to invoke a remote procedure."""
+
         async def proxy(*args, max_retries=0, retry_delay=10, **kwargs):
             for i in range(max_retries + 1):
                 try:
-                    return (await self._call_method(method, args, kwargs))
+                    return await self._call_method(method, args, kwargs)
                 except socket.error:
                     if i < max_retries:
-                        logging.warning('<%s> down, cannot call %s. '
-                                        'Retrying in %ss...', self.base_url,
-                                        method, retry_delay)
+                        logging.warning(
+                            "<%s> down, cannot call %s. " "Retrying in %ss...",
+                            self.base_url,
+                            method,
+                            retry_delay,
+                        )
                         await asyncio.sleep(retry_delay)
                     else:
                         raise

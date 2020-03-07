@@ -24,7 +24,7 @@ from django.dispatch import receiver
 from prologin.synchronisation import UpdateSenderTask
 from prologin.mdb.models import Machine
 
-prologin.log.setup_logging('mdb')
+prologin.log.setup_logging("mdb")
 
 
 def _mdb_send_updates(updates):
