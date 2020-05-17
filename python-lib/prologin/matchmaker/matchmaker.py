@@ -23,7 +23,7 @@ import logging
 import random
 import itertools
 from collections import defaultdict, Counter
-from typing import List
+from typing import Sequence
 
 import django.contrib.auth
 from django.conf import settings as django_settings
@@ -41,9 +41,9 @@ from prologin.concours.stechec.models import (
 
 @dataclasses.dataclass
 class MatchItem:
-    '''Class that represents a MatchMaker match.'''
+    """Class that represents a MatchMaker match."""
 
-    champions: List[Champion]
+    champions: Sequence[Champion]
     map: Map = None
     cancelled: bool = False
 
@@ -71,6 +71,8 @@ class MatchMaker(prologin.rpc.server.BaseRPCApp):
     def __init__(self, *args, config=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.config = config
+        # MatchMaker requested to stop
+        self.stopped = False
         # Current champions
         self.champions = set()
         # Matches managed by MatchMaker
@@ -91,11 +93,11 @@ class MatchMaker(prologin.rpc.server.BaseRPCApp):
             self.config["matchmaker"]["port"],
         )
 
-        self.run_task = asyncio.Task(self.run_task())
+        self.start_task = asyncio.Task(self.start())
 
         super().run(port=self.config["matchmaker"]["port"])
 
-    async def run_task(self):
+    async def start(self):
         await self.setup()
         await self.bootstrap()
 
@@ -105,7 +107,7 @@ class MatchMaker(prologin.rpc.server.BaseRPCApp):
     def get_champions_query(self):
         all_chs = Champion.objects.filter(status="ready", deleted=False)
 
-        # TODO
+        # TODO: tournament configuration
         deadline = None
         staff = True
 
@@ -124,20 +126,29 @@ class MatchMaker(prologin.rpc.server.BaseRPCApp):
 
         return Champion.objects.filter(pk__in=chs_ids)
 
-    async def setup(self):
-        self.author = django.contrib.auth.get_user_model().objects.get(
+    def get_tournament_author(self):
+        return django.contrib.auth.get_user_model().objects.get(
             pk=self.config["matchmaker"]["author_id"]
         )
-        logging.info("setup: match author: %s", self.author)
+
+    async def setup(self):
+        self.author = self.get_tournament_author()
+        logging.info(
+            "MatchMaker will use %s as author to schedule new matches",
+            self.author,
+        )
 
         self.tournament, _ = Tournament.objects.get_or_create(
             name=self.config["matchmaker"]["tournament_name"],
             defaults={"author": self.author},
         )
-        logging.info("setup: tournament: %s", self.tournament)
+        logging.info(
+            "MatchMaker will schedule matches for the %s tournament",
+            self.tournament,
+        )
 
         self.maps = list(self.tournament.maps.all())
-        logging.info("setup: tournament maps: %s", self.maps)
+        logging.info("MatchMaker will use the following maps: %s", self.maps)
 
     async def bootstrap(self):
         # Get current champions
@@ -190,8 +201,8 @@ class MatchMaker(prologin.rpc.server.BaseRPCApp):
             champions, repeat=django_settings.STECHEC_NPLAYERS
         ):
             # Don't fight against yourself
-            ch_ids = [c.id for c in chs]
-            if len(set(ch_ids)) != len(ch_ids):
+            ch_ids = {c.id for c in chs}
+            if len(ch_ids) != len(ch_ids):
                 continue
             yield from self.get_matches_with(chs)
 
@@ -217,10 +228,9 @@ class MatchMaker(prologin.rpc.server.BaseRPCApp):
 
         # Cancel scheduled matches
         for old_champion in old_champions:
-            for match in self.matches_with_champion[old_champion]:
+            for match in self.matches_with_champion.pop(old_champion):
                 logging.debug('Cancelling %s', match)
                 match.cancelled = True
-            del self.matches_with_champion[old_champion]
 
         # Cancel already created matches
         cancelled_matches = self.tournament.matches.exclude(
@@ -231,7 +241,9 @@ class MatchMaker(prologin.rpc.server.BaseRPCApp):
         for match in cancelled_matches.all():
             match.remove(self.tournament)
 
-    async def schedule_new_matches(self, known_champions, new_champions):
+    async def schedule_new_champions_matches(
+        self, known_champions, new_champions
+    ):
         logging.info('Scheduling matches for new champions %s', new_champions)
 
         new_matches = []
@@ -241,12 +253,12 @@ class MatchMaker(prologin.rpc.server.BaseRPCApp):
             repeat=django_settings.STECHEC_NPLAYERS,
         ):
             if not new_champions & set(chs):
-                # No now champion in match
+                # No new champion in match
                 continue
 
             # Don't fight against yourself
-            ch_ids = [c.id for c in chs]
-            if len(set(ch_ids)) != len(ch_ids):
+            ch_ids = {c.id for c in chs}
+            if len(ch_ids) != len(ch_ids):
                 continue
 
             new_matches.extend(self.get_matches_with(chs))
@@ -255,8 +267,8 @@ class MatchMaker(prologin.rpc.server.BaseRPCApp):
         self.add_matches(new_matches)
 
     async def dbwatcher_task(self):
-        """Watches for new champions."""
-        while True:
+        """Watches the database for new champions."""
+        while not self.stopped:
             # Query database
             current_champions = set(self.get_champions_query())
 
@@ -268,7 +280,9 @@ class MatchMaker(prologin.rpc.server.BaseRPCApp):
             known_champions = self.champions & current_champions
             new_champions = current_champions - self.champions
             if new_champions:
-                await self.schedule_new_matches(known_champions, new_champions)
+                await self.schedule_new_champions_matches(
+                    known_champions, new_champions
+                )
 
             # Commit set of current champions
             self.champions = current_champions
@@ -276,8 +290,8 @@ class MatchMaker(prologin.rpc.server.BaseRPCApp):
             await asyncio.sleep(1)
 
     async def match_creator_task(self):
-        """Create new matches at predefined rate per second."""
-        while True:
+        """Creates new matches at predefined rate per second."""
+        while not self.stopped:
             if self.next_matches:
                 logging.info('%d matches in queue', len(self.next_matches))
 
@@ -285,23 +299,22 @@ class MatchMaker(prologin.rpc.server.BaseRPCApp):
             while (
                 len(new_matches)
                 < self.config["matchmaker"]["matches_per_second"]
-                and len(self.next_matches) != 0
+                and self.next_matches
             ):
-                # Peek first
-                new_match = self.next_matches[0]
-                # Drop first
-                self.next_matches = self.next_matches[1:]
+                new_match, *self.next_matches = self.next_matches
                 if new_match.cancelled:
                     logging.debug('Skipping cancelled match: %s', new_match)
                     continue
-                new_matches.append(
-                    new_match.as_bulk_create(self.author, self.tournament)
-                )
+                new_matches.append(new_match)
 
             if new_matches:
                 logging.info('Creating %d matches', len(new_matches))
                 Match.launch_bulk(
-                    new_matches, priority=MatchPriority.TOURNAMENT
+                    [
+                        new_match.as_bulk_create(self.author, self.tournament)
+                        for new_match in new_matches
+                    ],
+                    priority=MatchPriority.TOURNAMENT,
                 )
 
             # TODO: replace with a condition on new matches
