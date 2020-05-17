@@ -197,13 +197,9 @@ class MatchMaker(prologin.rpc.server.BaseRPCApp):
 
     def get_desired_matches(self, champions):
         """Yields all expected matches for champions."""
-        for chs in itertools.product(
-            champions, repeat=django_settings.STECHEC_NPLAYERS
+        for chs in itertools.permutations(
+            champions, r=django_settings.STECHEC_NPLAYERS
         ):
-            # Don't fight against yourself
-            ch_ids = {c.id for c in chs}
-            if len(ch_ids) != len(ch_ids):
-                continue
             yield from self.get_matches_with(chs)
 
     def get_matches_with(self, champions):
@@ -248,17 +244,12 @@ class MatchMaker(prologin.rpc.server.BaseRPCApp):
 
         new_matches = []
         # Iterate over new matches
-        for chs in itertools.product(
+        for chs in itertools.permutations(
             new_champions | known_champions,
-            repeat=django_settings.STECHEC_NPLAYERS,
+            r=django_settings.STECHEC_NPLAYERS,
         ):
             if not new_champions & set(chs):
                 # No new champion in match
-                continue
-
-            # Don't fight against yourself
-            ch_ids = {c.id for c in chs}
-            if len(ch_ids) != len(ch_ids):
                 continue
 
             new_matches.extend(self.get_matches_with(chs))
